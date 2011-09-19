@@ -1,27 +1,25 @@
 package com.damarsan.FindMyParking;
 
 //import android.R;
-import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.graphics.Point;
 import android.graphics.drawable.Drawable;
-import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
-import android.location.LocationProvider;
 import android.os.Bundle;
-import android.util.Log;
-import android.widget.LinearLayout;
-import android.widget.RelativeLayout;
+import android.os.SystemClock;
+import android.view.ViewGroup.LayoutParams;
 import android.widget.TextView;
+import android.widget.Toast;
 import com.google.android.maps.GeoPoint;
 import com.google.android.maps.MapActivity;
 import com.google.android.maps.MapController;
 import com.google.android.maps.MapView;
 import com.google.android.maps.Overlay;
-import com.google.android.maps.OverlayItem;
-import java.io.IOException;
 import java.util.List;
 
 
@@ -33,95 +31,141 @@ public class HelloMapView extends MapActivity implements LocationListener
         HelloItemizedOverlay itemizedOverlay;
 	private MapView mapView;
 	private LocationManager locationManager;
-        private GeoPoint point;    
+        public GeoPoint point;    
         private static final String TAG = "LocationActivity";
         private Geocoder geocoder;
         private TextView locationText; 
+        
+    private class MyOverlay extends com.google.android.maps.Overlay{
+        @Override
+    
+    public void draw(Canvas canvas, MapView mapView, boolean shadow) { //1
+        super.draw(canvas, mapView, shadow);
+        
+       //  Toast.makeText(getApplicationContext(), "MIERRRRRDA", Toast.LENGTH_LONG).show();
+        
+        if(!shadow) { //2
+            Point point2 = new Point();
 
+            mapView.getProjection().toPixels(point, point2);//3
+
+                
+             //   Toast.makeText(getApplicationContext(), e.getMessage(), Toast.LENGTH_SHORT);
+                
+            
+            Bitmap bmp = BitmapFactory.decodeResource(getResources(), R.drawable.androidmarker); //4
+            int x = point2.x - bmp.getWidth() / 2; //5
+            int y = point2.y - bmp.getHeight();    //6
+            
+            canvas.drawBitmap(bmp, x, y, null); //7
+        }
+    }
+    
+}
+        
        @Override
 	public void onCreate(Bundle bundle) {
-		super.onCreate(bundle);
-		setContentView(R.layout.main); // bind the layout to the activity
-                
-                locationText = (TextView)this.findViewById(R.id.lblLocationInfo);
-                mapView = (MapView)this.findViewById(R.id.mapview);
-                mapView.setBuiltInZoomControls(true);
-                
-                mapController = mapView.getController(); //<4>
-                mapController.setZoom(16); 
-                locationManager = (LocationManager)this.getSystemService(LOCATION_SERVICE); //<2>   
-                geocoder = new Geocoder(this); //<3>
-                Location location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER); //<5>
-           //     Location location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER); //<5>
+        super.onCreate(bundle);
+	setContentView(R.layout.main);
+        mapView = (MapView)findViewById(R.id.mapview);
+	
+	mapController = mapView.getController();
+	mapController.setZoom(23);
+        mapView.setBuiltInZoomControls(true);
+       
+        MapView.LayoutParams params = new MapView.LayoutParams(
+    LayoutParams.WRAP_CONTENT,
+    LayoutParams.WRAP_CONTENT,
+    mapView.getWidth() /2, mapView.getHeight(),
+    MapView.LayoutParams.BOTTOM_CENTER);
+          mapView.addView(mapView.getZoomControls(), params);
 
-    if (location != null) {
-      Log.d(TAG, location.toString());
-      this.onLocationChanged(location); //<6>
+
+        locationManager = (LocationManager)getSystemService(LOCATION_SERVICE);
+        
+        LocationListener locationListener = new LocationListener() {
+			
+			@Override
+			public void onStatusChanged(String provider, int status, Bundle extras) {			// TODO Auto-generated method stub
+				
+			}
+			@Override
+			public void onProviderEnabled(String provider) {
+				// TODO Auto-generated method stub
+			}
+			@Override
+			public void onProviderDisabled(String provider) {
+				// TODO Auto-generated method stub
+			}
+			@Override
+			public void onLocationChanged(Location location) {
+				makeUseOfNewLocation(location);
+				//Toast.makeText(getApplicationContext(), "New Locationdd", Toast.LENGTH_LONG).show();	
+			}
+			private void makeUseOfNewLocation(Location location) {
+                             
+                               
+					
+				double lon = (double) (location.getLongitude() * 1E6);
+				double lat = (double) (location.getLatitude() * 1E6);
+				int lontitue = (int)lon;
+				int latitute = (int)lat;
+				Toast.makeText(getApplicationContext(), "New Lontitue = "+ lontitue +"\n New Latitute = "+ latitute, Toast.LENGTH_LONG).show();
+				 point = new GeoPoint(latitute, lontitue);
+				mapController.animateTo(point);
+                               
+                                //Añadimos el Overlay
+                                List<Overlay> overlays = mapView.getOverlays();
+                                overlays.clear();
+                                overlays.add(new MyOverlay());
+                                mapView.invalidate();
+                               // mapView.removeView(mapView);
+                                MapView.LayoutParams params = new MapView.LayoutParams(
+                                    LayoutParams.WRAP_CONTENT,
+                                    LayoutParams.WRAP_CONTENT,
+                                    mapView.getWidth() /2, mapView.getHeight(),
+                                    MapView.LayoutParams.BOTTOM_CENTER);
+                                mapView.addView(mapView.getZoomControls(), params);
+			}
+		};
+		locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,0,0,locationListener);
+		locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,0,0,locationListener);
     }
-  } //End onCreate
+       
+     
 
-    @Override
-      protected void onResume() {
-      super.onResume();
-    // locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 10, this); //<7>
-      locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, this); //<7> 
-  }
 
-    
-  @Override
-  protected void onPause() {
-    super.onPause();
-    locationManager.removeUpdates(this); //<8>
-  }
+/*
+ * 1 The draw method has a couple of arguments. The first argument is a handle to an instance of Canvas which we will use to draw our marker on. The second is an instance of MapView on which this overlay is displayed. The third argument is a boolean which indicates whether we are drawing the actual image, or the shadow. In fact, this method is called twice. Once to draw the shadow and once to draw the actual thing you want to draw.
+   2 We don't want to draw a shadow
+   3  We translate the geo point to actual pixels and store this information in the point variable.
+   4 We use the resource identifier to decode it to an actual instance of Bitmap so we can draw it on the canvas
+   5 We calculate the x-coordinate of where to draw the marker. We shift it to the left so the center of the image is aligned with the x-coordinate of the geo point
+   6 We calculate the y-coordinate of where to draw the marker. We shift it upward so the bottom of the image is aligned with the y-coordinate of the geo point
+   7 We draw the bitmap at the calculated x and y locations. 
+ */
 
-  @Override
-  public void onLocationChanged(Location location) { //<9>
-    Log.d(TAG, "onLocationChanged with location " + location.toString());
-    String text = String.format("Lat:\t %f\nLong:\t %f\nAlt:\t %f\nBearing:\t %f", location.getLatitude(), 
-                  location.getLongitude(), location.getAltitude(), location.getBearing());
-    this.locationText.setText(text);
-    
-    try {
-      List<Address> addresses = geocoder.getFromLocation(location.getLatitude(), location.getLongitude(), 10); //<10>
-      for (Address address : addresses) {
-        this.locationText.append("\n" + address.getAddressLine(0));
-      }
-      
-      int latitude = (int)(location.getLatitude() * 1000000);
-      int longitude = (int)(location.getLongitude() * 1000000);
-
-      point = new GeoPoint(latitude,longitude);
-      mapController.animateTo(point); //<11>
-      
-    } catch (IOException e) {
-      Log.e("LocateMe", "Could not get Geocoder data", e);
-    } //end of try
-  }// end of OnLocationChanged
-  
-        @Override
+	@Override
 	protected boolean isRouteDisplayed() {
 		return false;
 	}
-  
-        @Override
-	public void onProviderDisabled(String provider) {
-	}
-        @Override
-	public void onProviderEnabled(String provider) {
-		}
-        @Override
-		public void onStatusChanged(String provider, int status, Bundle extras) {
-		}
+
+    public void onLocationChanged(Location arg0) {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    public void onStatusChanged(String arg0, int arg1, Bundle arg2) {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    public void onProviderEnabled(String arg0) {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    public void onProviderDisabled(String arg0) {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+    
+    
 }
-
  
-
-
-
-	
-
-		
-              
-                       
-	
-  
