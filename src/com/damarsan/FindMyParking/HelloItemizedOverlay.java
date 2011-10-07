@@ -2,7 +2,6 @@ package com.damarsan.FindMyParking;
 
 import java.util.ArrayList;
 
-import android.app.AlertDialog;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;

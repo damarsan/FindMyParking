@@ -29,6 +29,7 @@ import java.io.BufferedReader;
 import java.util.List;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 
@@ -40,7 +41,7 @@ public class HelloMapView extends MapActivity implements LocationListener
 	MapView mapview;
         List<Overlay> mapOverlays;
         Drawable drawable, drawable2;
-        HelloItemizedOverlay itemizedOverlay, itemizedOverlay2;
+        HelloItemizedOverlay itemizedOverlay;
         GeoPoint geopoint = null;
         GeoPoint geopoint2 = null;
         Context mContext;
@@ -63,17 +64,30 @@ public class HelloMapView extends MapActivity implements LocationListener
 	mapController = mapview.getController();
 	mapController.setZoom(20);
 
+          //Definimos los criterios para seleccionar al mejor proveedor
           Criteria criteria = new Criteria();
+          //precisión elevada
           criteria.setAccuracy(Criteria.ACCURACY_FINE);
+          //no se requiere informaciñón de altitud
           criteria.setAltitudeRequired(false);
+          //no se requiere información de rumbo
           criteria.setBearingRequired(false);
+          //se permite gasto
           criteria.setCostAllowed(true);
-          criteria.setPowerRequirement(Criteria.POWER_LOW);
+          //nivel de energia
+          criteria.setPowerRequirement(Criteria.POWER_MEDIUM);
+          //Alta precisión horizontal y vertical
+          criteria.setHorizontalAccuracy(Criteria.ACCURACY_HIGH);
+          criteria.setVerticalAccuracy(Criteria.ACCURACY_HIGH);
           
+          
+          //En primer lugar se instancia el LocationManager
           locationManager = (LocationManager)getSystemService(LOCATION_SERVICE);
-         //  String provider = locationManager.getBestProvider(criteria, true);
+          
+          
+           String provider = locationManager.getBestProvider(criteria, true);
 
-       //   location = locationManager.getLastKnownLocation(provider);
+          location = locationManager.getLastKnownLocation(provider);
 
                 //Activamos la OverlayLayer y añadimos el recurso de imagen androidmarker
                 mapOverlays = mapview.getOverlays();
@@ -114,8 +128,8 @@ public class HelloMapView extends MapActivity implements LocationListener
 				int latitute = (int)lat;
 				
 				Toast.makeText(getApplicationContext(), "Longitud = "+ lontitue +"\n Latitud = "+ latitute, Toast.LENGTH_LONG).show();
-				locationDetails = (TextView)findViewById(R.id.textViewMap);
-				locationDetails.setText("Longitud = "+ lontitue +"\n Latitud = "+ latitute);
+				//locationDetails = (TextView)findViewById(R.id.textViewMap);
+			//	locationDetails.setText("Longitud = "+ lontitue +"\n Latitud = "+ latitute);
 			        geopoint = new GeoPoint(latitute, lontitue);
 				mapController.animateTo(geopoint);
                                 
@@ -194,12 +208,13 @@ public class HelloMapView extends MapActivity implements LocationListener
             case 1:
                 //Almacenamos la ubicación donde hemos aparcado
                 locationManager.requestSingleUpdate(LocationManager.NETWORK_PROVIDER, locationListener, null);
-
                 try {
-                FileOutputStream out = openFileOutput("location.txt",
-                                                                MODE_WORLD_READABLE);
+                FileOutputStream out = openFileOutput("location.txt",Context.MODE_PRIVATE);
+                                                
                 OutputStreamWriter osw = new OutputStreamWriter(out);
+                
                 osw.write(Double.toString(geopoint.getLongitudeE6() / 1E6));
+
                 osw.write("\n");
                 osw.write(Double.toString(geopoint.getLatitudeE6() / 1E6));
 
@@ -209,9 +224,10 @@ public class HelloMapView extends MapActivity implements LocationListener
 
            
                 }
-                catch (Throwable t) {
-                    
-                Log.v(TAG, t.getMessage().toString());}
+                catch (IOException t) {
+
+               Log.v(TAG, "MIERDAAAAAAA "+t.getMessage().toString());}
+           
                 return(true);
                 
             case 2:
@@ -235,29 +251,28 @@ public class HelloMapView extends MapActivity implements LocationListener
                 while ((str = reader.readLine()) != null) {
                     buf.append(str+"\n");
                 }
-                //separamos la logitud y latitud
+                //separamos la longitud y latitud
                 separated = buf.toString().split("\n");
                 separated[0].trim();
                 separated[1].trim();
                 //Cerramos FileInputStream y InputStreamReader
                 isr.close();
-              //  in.close();                                  
+               // in.close();                                  
                 Log.v(TAG, separated[0]);
                 Log.v(TAG, separated[1]); 
     
-                }catch (Throwable t) {
-                 Log.v(TAG, t.getMessage().toString());   
-                }
+                }catch (Throwable t) {}
                 
                 double lng = Double.parseDouble(separated[0]);
                 double lat = Double.parseDouble(separated[1]);
+                
 
                geopoint2 = new GeoPoint((int)(lat*1E6),(int)(lng*1E6));
                 mapController.setZoom(18); 
                 mapController.animateTo(geopoint2);
                  
                  
-                //Log.v(TAG, geopoint2.toString());
+                Log.v(TAG, geopoint2.toString());
                  
                 OverlayItem overlayitem2 = new OverlayItem(geopoint2, "", "");
                 drawable2 = this.getResources().getDrawable(R.drawable.parking);
@@ -272,7 +287,12 @@ public class HelloMapView extends MapActivity implements LocationListener
                 return(true);
                 
             case 4:
-                mapOverlays.removeAll(mapOverlays);
+                if(!mapOverlays.isEmpty()) 
+                    { 
+                        mapOverlays.clear();
+                       // mapview.invalidate();
+                        mapview.postInvalidate();
+                    }
                 return(true);
                 
             case 5:
