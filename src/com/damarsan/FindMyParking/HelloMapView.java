@@ -40,17 +40,19 @@ public class HelloMapView extends MapActivity implements LocationListener
         MapController mapController;
 	MapView mapview;
         List<Overlay> mapOverlays;
-        Drawable drawable, drawable2;
+        Drawable drawable=null, drawable2;
         HelloItemizedOverlay itemizedOverlay;
         GeoPoint geopoint = null;
         GeoPoint geopoint2 = null;
         Context mContext;
-        private Menu menu;
         Location location;
         LocationListener locationListener;
         LocationManager locationManager;
         private String TAG ="MyActivity";
-        private Projection projection;  
+        private Projection projection;
+        String provider;
+        Criteria criteria;
+        Canvas c1 = new Canvas();
         
 	/** Called when the activity is first created. */
     @Override
@@ -65,7 +67,7 @@ public class HelloMapView extends MapActivity implements LocationListener
 	mapController.setZoom(20);
 
           //Definimos los criterios para seleccionar al mejor proveedor
-          Criteria criteria = new Criteria();
+          criteria = new Criteria();
           //precisión elevada
           criteria.setAccuracy(Criteria.ACCURACY_FINE);
           //no se requiere informaciñón de altitud
@@ -84,10 +86,11 @@ public class HelloMapView extends MapActivity implements LocationListener
           //En primer lugar se instancia el LocationManager
           locationManager = (LocationManager)getSystemService(LOCATION_SERVICE);
           
-          
-           String provider = locationManager.getBestProvider(criteria, true);
+           //Obtenemos el mejor proveedor con los criterios descritos anteriormente
+           provider = locationManager.getBestProvider(criteria, true);
 
-          location = locationManager.getLastKnownLocation(provider);
+           //
+           location = locationManager.getLastKnownLocation(provider);
 
                 //Activamos la OverlayLayer y añadimos el recurso de imagen androidmarker
                 mapOverlays = mapview.getOverlays();
@@ -96,8 +99,10 @@ public class HelloMapView extends MapActivity implements LocationListener
                 
                 drawable = this.getResources().getDrawable(R.drawable.androidmarker);
 
-                itemizedOverlay = new HelloItemizedOverlay(drawable,mContext);
- 
+              //  itemizedOverlay = new HelloItemizedOverlay(drawable,mContext);
+                  itemizedOverlay = new HelloItemizedOverlay(drawable,this);
+              //  itemizedOverlay = new HelloItemizedOverlay(geopoint,geopoint2,drawable,mapview);
+                
                 locationListener = new LocationListener() {
 			
 			private TextView locationDetails;
@@ -120,7 +125,7 @@ public class HelloMapView extends MapActivity implements LocationListener
 				//Toast.makeText(getApplicationContext(), "New Locationdd", Toast.LENGTH_LONG).show();
 			}
 			public void makeUseOfNewLocation(Location location) {
-			
+                            
 				double lon = (double) (location.getLongitude() * 1E6);
 				double lat = (double) (location.getLatitude() * 1E6);
 				
@@ -207,26 +212,26 @@ public class HelloMapView extends MapActivity implements LocationListener
         {
             case 1:
                 //Almacenamos la ubicación donde hemos aparcado
-                locationManager.requestSingleUpdate(LocationManager.NETWORK_PROVIDER, locationListener, null);
-                try {
-                FileOutputStream out = openFileOutput("location.txt",Context.MODE_PRIVATE);
-                                                
-                OutputStreamWriter osw = new OutputStreamWriter(out);
-                
-                osw.write(Double.toString(geopoint.getLongitudeE6() / 1E6));
+                drawable = this.getResources().getDrawable(R.drawable.androidmarker);
 
+                locationManager.requestSingleUpdate(criteria, locationListener, null);
+
+                try {
+                    
+                FileOutputStream out = openFileOutput("location.txt",Context.MODE_PRIVATE);
+                OutputStreamWriter osw = new OutputStreamWriter(out);
+                osw.write(Double.toString(geopoint.getLongitudeE6() / 1E6));
                 osw.write("\n");
                 osw.write(Double.toString(geopoint.getLatitudeE6() / 1E6));
-
                 osw.flush();
                 osw.close();
                	Toast.makeText(getApplicationContext(), "Ubicación de Parking Almacenada", Toast.LENGTH_LONG).show();
-
-           
                 }
                 catch (IOException t) {
+                    Log.v(TAG, "MIERRRDAAA");
+                }
 
-               Log.v(TAG, "MIERDAAAAAAA "+t.getMessage().toString());}
+             //  Log.v(TAG, "MIERDAAAAAAA "+t.getMessage().toString());}
            
                 return(true);
                 
@@ -235,7 +240,7 @@ public class HelloMapView extends MapActivity implements LocationListener
                  drawable = this.getResources().getDrawable(R.drawable.androidmarker);
 
                 //Obtenemos la ubicación actual
-               locationManager.requestSingleUpdate(LocationManager.NETWORK_PROVIDER, locationListener, null);
+                 locationManager.requestSingleUpdate(criteria, locationListener, null);
                 return(true);
                 
             case 3:
@@ -279,7 +284,7 @@ public class HelloMapView extends MapActivity implements LocationListener
                 drawable2.setBounds(0, 0, drawable2.getIntrinsicWidth(), drawable2.getIntrinsicHeight());
                 overlayitem2.setMarker(drawable2);
                 itemizedOverlay.addOverlay(overlayitem2);
-                mapOverlays.clear();
+               // mapOverlays.clear();
                 mapOverlays.add(itemizedOverlay);
                 mapview.invalidate();
                 Toast.makeText(getApplicationContext(), "Ubicación de Parking Recuperada", Toast.LENGTH_LONG).show();
@@ -289,19 +294,22 @@ public class HelloMapView extends MapActivity implements LocationListener
             case 4:
                 if(!mapOverlays.isEmpty()) 
                     { 
+                        itemizedOverlay.clearOverlay();
                         mapOverlays.clear();
-                       // mapview.invalidate();
                         mapview.postInvalidate();
-                    }
+                    } else Toast.makeText(getApplicationContext(),"No hay ubicaciones", Toast.LENGTH_LONG).show();
+
                 return(true);
                 
             case 5:
-                    mapOverlays.add(new MyOverlay());        
+                itemizedOverlay.draw2(c1, mapview, true);
                 return(true);
 
         }
         return (false);
     }
+    
+    
 
     public void onLocationChanged(Location arg0) {
         throw new UnsupportedOperationException("Not supported yet.");
@@ -318,44 +326,5 @@ public class HelloMapView extends MapActivity implements LocationListener
     public void onProviderDisabled(String arg0) {
         throw new UnsupportedOperationException("Not supported yet.");
     }
-    
-    class MyOverlay extends Overlay{
-
-    public MyOverlay(){
-
-    }   
-
-    public void draw(Canvas canvas, MapView mapv, boolean shadow){
-        super.draw(canvas, mapv, shadow);
-
-    Paint   mPaint = new Paint();
-        mPaint.setDither(true);
-        mPaint.setColor(Color.RED);
-        mPaint.setStyle(Paint.Style.FILL_AND_STROKE);
-        mPaint.setStrokeJoin(Paint.Join.ROUND);
-        mPaint.setStrokeCap(Paint.Cap.ROUND);
-        mPaint.setStrokeWidth(2);
-
-/*        GeoPoint gP1 = new GeoPoint(19240000,-99120000);
-        GeoPoint gP2 = new GeoPoint(37423157, -122085008);*/
-
-        Point p1 = new Point();
-        Point p2 = new Point();
-
-        Path path = new Path();
-
-        Projection  projection = null;
-        projection.toPixels(geopoint, p1);
-        projection.toPixels(geopoint2, p2);
-
-        path.moveTo(p2.x, p2.y);
-        path.lineTo(p1.x,p1.y);
-
-        canvas.drawPath(path, mPaint);
-    }
-    
-    }// FIN DE LA CLASE
-
-    
     
 }  //FIN DE LA CLASE
