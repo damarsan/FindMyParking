@@ -1,13 +1,11 @@
 package com.damarsan.FindMyParking;
 
-import android.app.AlertDialog;
 import java.util.ArrayList;
 
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.Path;
 import android.graphics.Point;
 import android.graphics.drawable.Drawable;
 
@@ -19,9 +17,7 @@ import android.widget.Toast;
 import com.google.android.maps.GeoPoint;
 import com.google.android.maps.ItemizedOverlay;
 import com.google.android.maps.MapView;
-import com.google.android.maps.Overlay;
 import com.google.android.maps.OverlayItem;
-import com.google.android.maps.Projection;
 import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
@@ -56,22 +52,20 @@ public class HelloItemizedOverlay extends ItemizedOverlay {
   populate();
  }
  
- 
-
-
  public void addOverlay(OverlayItem overlay) {
      mOverlays.add(overlay);
      populate();
  }
- 
- 
- 
  
  public void clearOverlay()
  {
      mOverlays.clear();
  }
 
+ public void deleteOverlay(OverlayItem overlay) {
+     mOverlays.remove(overlay);
+ }
+ 
  @Override
  protected OverlayItem createItem(int i) {
    return mOverlays.get(i);
@@ -84,42 +78,13 @@ public class HelloItemizedOverlay extends ItemizedOverlay {
  
  
  
- public boolean onTap (final GeoPoint p, final MapView mapView){
-    boolean tapped = super.onTap(p, mapView);
-    if (tapped){     
-      //	Toast.makeText(getApplicationContext(), "Longitud = "+ lontitue +"\n Latitud = "+ latitute, Toast.LENGTH_LONG).show();
-    
-        
-    }           
-    else{
-        //do what you want to do when you DONT hit an item
-        }                   
-    return true;
-}
-
-//You must have this method, even if it doesn't visibly do anything
-
-/*@Override
-protected boolean onTap(int index) {
-
-     AlertDialog.Builder dialog = new AlertDialog.Builder(this.context);
-     dialog.setTitle(this.mOverlays.get(index).getTitle());
-     dialog.setMessage(this.mOverlays.get(index).getSnippet());
-     dialog.show();     
-
-    return true;
-}
-*/
- 
- 
- @Override 
-  public boolean onTouchEvent(MotionEvent event, MapView mapView)
+ @Override
+ protected boolean onTap(int index)
  {
-     if (event.getAction() == 1) {
-         GeoPoint p = mapView.getProjection().fromPixels((int) event.getX(), (int) event.getY());
-         
-         Geocoder gc = new Geocoder(
-                        this.context, Locale.getDefault());
+ OverlayItem item = mOverlays.get(index);
+ GeoPoint p = item.getPoint();
+   Geocoder gc = new Geocoder(
+         this.context, Locale.getDefault());
          try
          {
              List<Address> addresses = gc.getFromLocation(p.getLatitudeE6() / 1E6, p.getLongitudeE6() / 1E6, 1);
@@ -131,21 +96,17 @@ protected boolean onTap(int index) {
                      add += addresses.get(0).getAddressLine(i) + "\n";
              }
              
-             Toast.makeText(this.context, add, Toast.LENGTH_SHORT).show();
+                Toast.makeText(this.context, add, Toast.LENGTH_SHORT).show();
          }
             catch (IOException e){
                 e.printStackTrace();
-            }
-         
-         return true;
-         }
-     else return false;
-         
-     }
-     
- 
-  
-    public void draw2(Canvas canvas, MapView mapView, boolean shadow) {
+                                 }     
+             
+ return true;
+ }
+      
+   /* @Override
+    public void draw(Canvas canvas, MapView mapView, boolean shadow) {
 
 
         Point screenCoords=new Point();
@@ -156,6 +117,8 @@ protected boolean onTap(int index) {
         p1 = this.getItem(0).getPoint();
         p2 = this.getItem(1).getPoint();
        
+        Log.v(TAG, p1.toString());
+        Log.v(TAG, p2.toString());
         
         mapView.getProjection().toPixels(p1, screenCoords);
         int x1=screenCoords.x;
@@ -173,7 +136,7 @@ protected boolean onTap(int index) {
         super.draw(canvas, mapView, shadow);
 
         }
-    }
+    }*/
     
     
 

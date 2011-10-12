@@ -1,21 +1,25 @@
 package com.damarsan.FindMyParking;
 
 //import android.R;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.Path;
-import android.graphics.Point;
 import android.graphics.drawable.Drawable;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.net.ConnectivityManager;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 import com.google.android.maps.GeoPoint;
@@ -35,6 +39,8 @@ import java.io.OutputStreamWriter;
 
 
 
+
+
 public class HelloMapView extends MapActivity implements LocationListener
 {
         MapController mapController;
@@ -49,7 +55,6 @@ public class HelloMapView extends MapActivity implements LocationListener
         LocationListener locationListener;
         LocationManager locationManager;
         private String TAG ="MyActivity";
-        private Projection projection;
         String provider;
         Criteria criteria;
         Canvas c1 = new Canvas();
@@ -61,10 +66,27 @@ public class HelloMapView extends MapActivity implements LocationListener
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);   
 
+
+       if(!this.checkInternetConnection())
+       {
+        AlertDialog alertDialog = new AlertDialog.Builder(this).create();
+        alertDialog.setTitle("AVISO");
+        alertDialog.setMessage("Se requiere conexión a Internet");
+        alertDialog.setButton("OK", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int which) {
+                try {
+                        System.exit(0);
+                } catch(Throwable t){}; 
+            }
+                });
+            alertDialog.setIcon(R.drawable.icon);
+            alertDialog.show();
+       } 
+        
         mapview = (MapView)findViewById(R.id.mapview);        
 	mapview.setBuiltInZoomControls(true);  //activamos controles de Zoom
 	mapController = mapview.getController();
-	mapController.setZoom(20);
+	//mapController.setZoom(20);
 
           //Definimos los criterios para seleccionar al mejor proveedor
           criteria = new Criteria();
@@ -94,7 +116,6 @@ public class HelloMapView extends MapActivity implements LocationListener
 
                 //Activamos la OverlayLayer y añadimos el recurso de imagen androidmarker
                 mapOverlays = mapview.getOverlays();
-                projection = mapview.getProjection();
 
                 
                 drawable = this.getResources().getDrawable(R.drawable.androidmarker);
@@ -132,7 +153,7 @@ public class HelloMapView extends MapActivity implements LocationListener
 				int lontitue = (int)lon;
 				int latitute = (int)lat;
 				
-				Toast.makeText(getApplicationContext(), "Longitud = "+ lontitue +"\n Latitud = "+ latitute, Toast.LENGTH_LONG).show();
+				//Toast.makeText(getApplicationContext(), "Longitud = "+ lontitue +"\n Latitud = "+ latitute, Toast.LENGTH_LONG).show();
 				//locationDetails = (TextView)findViewById(R.id.textViewMap);
 			//	locationDetails.setText("Longitud = "+ lontitue +"\n Latitud = "+ latitute);
 			        geopoint = new GeoPoint(latitute, lontitue);
@@ -162,7 +183,7 @@ public class HelloMapView extends MapActivity implements LocationListener
                OverlayItem overlayitem = new OverlayItem(geopoint, "", "");
                itemizedOverlay.addOverlay(overlayitem);
                 mapOverlays.add(itemizedOverlay);
-                } else 	Toast.makeText(getApplicationContext(), "MAPA CARGADO", Toast.LENGTH_LONG).show();         
+                } else 	Toast.makeText(getApplicationContext(), "MAPA CARGADO", Toast.LENGTH_SHORT).show();         
     }  // FIN DE ONCREATE()
     
     
@@ -192,7 +213,7 @@ public class HelloMapView extends MapActivity implements LocationListener
         menu.add(Menu.NONE, 2, Menu.NONE, "Donde Estoy");
         menu.add(Menu.NONE, 3, Menu.NONE, "Recuperar Parking");
         menu.add(Menu.NONE, 4, Menu.NONE, "Limpiar Ubicaciones");
-        menu.add(Menu.NONE, 5, Menu.NONE, "Dibujar ruta");
+        menu.add(Menu.NONE, 5, Menu.NONE, "Calcular Distancia");
        // throw new UnsupportedOperationException("Not yet implemented");
     }
     
@@ -225,20 +246,18 @@ public class HelloMapView extends MapActivity implements LocationListener
                 osw.write(Double.toString(geopoint.getLatitudeE6() / 1E6));
                 osw.flush();
                 osw.close();
-               	Toast.makeText(getApplicationContext(), "Ubicación de Parking Almacenada", Toast.LENGTH_LONG).show();
+               	Toast.makeText(getApplicationContext(), "Ubicación de Parking Almacenada", Toast.LENGTH_SHORT).show();
                 }
                 catch (IOException t) {
                     Log.v(TAG, "MIERRRDAAA");
                 }
-
-             //  Log.v(TAG, "MIERDAAAAAAA "+t.getMessage().toString());}
            
                 return(true);
                 
             case 2:
-                 //Cambiamos el icono de ubicación
+                 //Cambiamos el icono de ubicación               
                  drawable = this.getResources().getDrawable(R.drawable.androidmarker);
-
+                 drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
                 //Obtenemos la ubicación actual
                  locationManager.requestSingleUpdate(criteria, locationListener, null);
                 return(true);
@@ -266,14 +285,16 @@ public class HelloMapView extends MapActivity implements LocationListener
                 Log.v(TAG, separated[0]);
                 Log.v(TAG, separated[1]); 
     
-                }catch (Throwable t) {}
+                }catch (Throwable t) {
+                    Toast.makeText(getApplicationContext(),t.toString(), Toast.LENGTH_SHORT).show();
+                }
                 
                 double lng = Double.parseDouble(separated[0]);
                 double lat = Double.parseDouble(separated[1]);
                 
 
                geopoint2 = new GeoPoint((int)(lat*1E6),(int)(lng*1E6));
-                mapController.setZoom(18); 
+             //   mapController.setZoom(18); 
                 mapController.animateTo(geopoint2);
                  
                  
@@ -287,8 +308,7 @@ public class HelloMapView extends MapActivity implements LocationListener
                // mapOverlays.clear();
                 mapOverlays.add(itemizedOverlay);
                 mapview.invalidate();
-                Toast.makeText(getApplicationContext(), "Ubicación de Parking Recuperada", Toast.LENGTH_LONG).show();
-                Toast.makeText(getApplicationContext(), "Longitud = "+ lng +" Latitud = "+ lat, Toast.LENGTH_LONG).show();
+                Toast.makeText(getApplicationContext(), "Ubicación de Parking Recuperada", Toast.LENGTH_SHORT).show();
                 return(true);
                 
             case 4:
@@ -297,20 +317,27 @@ public class HelloMapView extends MapActivity implements LocationListener
                         itemizedOverlay.clearOverlay();
                         mapOverlays.clear();
                         mapview.postInvalidate();
-                    } else Toast.makeText(getApplicationContext(),"No hay ubicaciones", Toast.LENGTH_LONG).show();
+                    } else Toast.makeText(getApplicationContext(),"No hay ubicaciones", Toast.LENGTH_SHORT).show();
 
                 return(true);
                 
             case 5:
-                itemizedOverlay.draw2(c1, mapview, true);
+                     if(geopoint != null && geopoint2 !=null)
+                     {
+                        Double res = this.getDistanceInKiloMeters(geopoint, geopoint2);
+                        String unidad=null;
+                        if (res >1) unidad="Kms."; else unidad="mts.";
+                              this.ViewDialog("Distancia aprox. de "+res.toString()+unidad);          
+                      //  Toast.makeText(getApplicationContext(),"Distancia aprox. de "+res.toString()+unidad, Toast.LENGTH_SHORT).show();
+                     }
+                     else 
+                       Toast.makeText(getApplicationContext(),"Falta ubicar origen o destino", Toast.LENGTH_SHORT).show();   
                 return(true);
 
         }
         return (false);
     }
     
-    
-
     public void onLocationChanged(Location arg0) {
         throw new UnsupportedOperationException("Not supported yet.");
     }
@@ -326,5 +353,62 @@ public class HelloMapView extends MapActivity implements LocationListener
     public void onProviderDisabled(String arg0) {
         throw new UnsupportedOperationException("Not supported yet.");
     }
+    
+    public double getDistanceInKiloMeters(GeoPoint p1, GeoPoint p2) {
+    double distance;
+    double lat1 = ((double)p1.getLatitudeE6()) / 1e6;
+    double lng1 = ((double)p1.getLongitudeE6()) / 1e6;
+    double lat2 = ((double)p2.getLatitudeE6()) / 1e6;
+    double lng2 = ((double)p2.getLongitudeE6()) / 1e6;
+    Location locationA = new Location("point A");
+    locationA.setLatitude(lat1);  
+    locationA.setLongitude(lng1);  
+    Location locationB = new Location("point B"); 
+    locationB.setLatitude(lat2);
+    locationB.setLongitude(lng2);
+    distance = locationA.distanceTo(locationB);  
+    Log.v(TAG, Double.toString(distance));
+    if (distance>1000)
+    return Math.round(distance/1000);
+    else return Math.round(distance); 
+    }
+    
+                        public void ViewDialog(String aux) {
+                                        LayoutInflater inflater = getLayoutInflater();
+                                        View layout = inflater.inflate(R.layout.toast_layout,
+                                        (ViewGroup) findViewById(R.id.toast_layout_root));                                       
+                                        ImageView image = (ImageView) layout.findViewById(R.id.image);
+                                        image.setImageResource(R.drawable.androidmarker);
+                                        TextView text = (TextView) layout.findViewById(R.id.text);
+                                        text.setText(aux);
+                                        Toast toast = new Toast(getApplicationContext());
+                                        toast.setGravity(Gravity.CENTER_VERTICAL, 0, 0);
+                                        toast.setDuration(Toast.LENGTH_LONG);
+                                        toast.setView(layout);
+                                        toast.show();
+        
+                                        }
+                        
+                        
+      private boolean checkInternetConnection() {
+
+        ConnectivityManager conMgr = (ConnectivityManager) getSystemService (Context.CONNECTIVITY_SERVICE);
+
+            // ARE WE CONNECTED TO THE NET
+
+            if (conMgr.getActiveNetworkInfo() != null
+
+                    && conMgr.getActiveNetworkInfo().isAvailable()
+
+                    && conMgr.getActiveNetworkInfo().isConnected()) {
+
+                    return true;
+
+                    } else {
+                            return false;
+                            }
+
+        }    
+
     
 }  //FIN DE LA CLASE
