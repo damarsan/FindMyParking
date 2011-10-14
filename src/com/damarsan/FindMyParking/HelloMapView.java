@@ -30,12 +30,20 @@ import com.google.android.maps.Overlay;
 import com.google.android.maps.OverlayItem;
 import com.google.android.maps.Projection;
 import java.io.BufferedReader;
+import java.net.MalformedURLException;
 import java.util.List;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 
 
@@ -48,6 +56,7 @@ public class HelloMapView extends MapActivity implements LocationListener
         List<Overlay> mapOverlays;
         Drawable drawable=null, drawable2;
         HelloItemizedOverlay itemizedOverlay;
+        PolyLineDecoder decoder;
         GeoPoint geopoint = null;
         GeoPoint geopoint2 = null;
         Context mContext;
@@ -58,6 +67,7 @@ public class HelloMapView extends MapActivity implements LocationListener
         String provider;
         Criteria criteria;
         Canvas c1 = new Canvas();
+        StringBuilder response = new StringBuilder();
         
 	/** Called when the activity is first created. */
     @Override
@@ -86,7 +96,7 @@ public class HelloMapView extends MapActivity implements LocationListener
         mapview = (MapView)findViewById(R.id.mapview);        
 	mapview.setBuiltInZoomControls(true);  //activamos controles de Zoom
 	mapController = mapview.getController();
-	//mapController.setZoom(20);
+	mapController.setZoom(18);
 
           //Definimos los criterios para seleccionar al mejor proveedor
           criteria = new Criteria();
@@ -110,10 +120,10 @@ public class HelloMapView extends MapActivity implements LocationListener
           
            //Obtenemos el mejor proveedor con los criterios descritos anteriormente
            provider = locationManager.getBestProvider(criteria, true);
-
+           Log.v(TAG, "PROVIDER: "+provider.toString());
            //
            location = locationManager.getLastKnownLocation(provider);
-
+           Log.v(TAG, "LOCATION: "+location.toString());
                 //Activamos la OverlayLayer y añadimos el recurso de imagen androidmarker
                 mapOverlays = mapview.getOverlays();
 
@@ -126,39 +136,37 @@ public class HelloMapView extends MapActivity implements LocationListener
                 
                 locationListener = new LocationListener() {
 			
-			private TextView locationDetails;
+			
                         // Acquire a reference to the system Location Manager
 			@Override
 			public void onStatusChanged(String provider, int status, Bundle extras) {
-				// TODO Auto-generated method stub	
+				Log.v(TAG, "....OnStatusChanged----");
 			}
 			@Override
 			public void onProviderEnabled(String provider) {
-				// TODO Auto-generated method stub
+                                Log.v(TAG, "....OnProviderEnabled----");
+                                
+
 			}
 			@Override
 			public void onProviderDisabled(String provider) {
-				// TODO Auto-generated method stub
+				 Log.v(TAG, "....OnProviderDisabled----");
 			}
 			@Override
 			public void onLocationChanged(Location location) {
+                            Log.v(TAG, "ENTRA EN ONLOCATIONCHANGED");
 				makeUseOfNewLocation(location);
 				//Toast.makeText(getApplicationContext(), "New Locationdd", Toast.LENGTH_LONG).show();
 			}
-			public void makeUseOfNewLocation(Location location) {
-                            
-				double lon = (double) (location.getLongitude() * 1E6);
+			public void makeUseOfNewLocation(Location location) {                            
+			
+                          if(itemizedOverlay.size() == 2) itemizedOverlay.removeOverlay(0);           
+                                double lon = (double) (location.getLongitude() * 1E6);
 				double lat = (double) (location.getLatitude() * 1E6);
-				
 				int lontitue = (int)lon;
 				int latitute = (int)lat;
-				
-				//Toast.makeText(getApplicationContext(), "Longitud = "+ lontitue +"\n Latitud = "+ latitute, Toast.LENGTH_LONG).show();
-				//locationDetails = (TextView)findViewById(R.id.textViewMap);
-			//	locationDetails.setText("Longitud = "+ lontitue +"\n Latitud = "+ latitute);
 			        geopoint = new GeoPoint(latitute, lontitue);
-				mapController.animateTo(geopoint);
-                                
+				mapController.animateTo(geopoint);  
                                 //creamos el OverlayItem a partir del GeoPoint
                                 OverlayItem overlayitem = new OverlayItem(geopoint, "", "");
                                 //Añadimos el item al Array de Overlays
@@ -178,24 +186,17 @@ public class HelloMapView extends MapActivity implements LocationListener
             
                 
                 //Añadimos el item a la OverlayLayer
-                
                 if (geopoint != null) {
                OverlayItem overlayitem = new OverlayItem(geopoint, "", "");
                itemizedOverlay.addOverlay(overlayitem);
                 mapOverlays.add(itemizedOverlay);
                 } else 	Toast.makeText(getApplicationContext(), "MAPA CARGADO", Toast.LENGTH_SHORT).show();         
     }  // FIN DE ONCREATE()
-    
-    
-    
-
 	@Override
 	protected boolean isRouteDisplayed() {
 		return false;
 	}
-        
-        
-        
+                       
     //GENERAMOS EL MENU PRINCIPAL
     
      @Override
@@ -205,8 +206,7 @@ public class HelloMapView extends MapActivity implements LocationListener
             return (super.onCreateOptionsMenu(menu));
             
         }
-     
-     
+          
      //AÑADIMOS LAS OPCIONES AL MENU
     private void populateMenu(Menu menu) {
         menu.add(Menu.NONE, 1, Menu.NONE, "Almacenar Parking");
@@ -222,21 +222,36 @@ public class HelloMapView extends MapActivity implements LocationListener
     //SIN ESTO NO FUNCIONA
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        return(applyMenuChoice(item) || super.onOptionsItemSelected(item));
+        try {
+            return(applyMenuChoice(item) || super.onOptionsItemSelected(item));
+        } catch (MalformedURLException ex) {
+            Logger.getLogger(HelloMapView.class.getName()).log(Level.SEVERE, null, ex);
+            return false;
+        } catch (IOException ex) {
+            Logger.getLogger(HelloMapView.class.getName()).log(Level.SEVERE, null, ex);
+            return false;
+        }
+       
     }
     
     //AÑADIMOS LAS ACCIONES DEL MENU
     
-    private boolean applyMenuChoice(MenuItem item)
+    private boolean applyMenuChoice(MenuItem item) throws MalformedURLException, IOException
     {
         switch (item.getItemId())
         {
             case 1:
                 //Almacenamos la ubicación donde hemos aparcado
                 drawable = this.getResources().getDrawable(R.drawable.androidmarker);
-
-                locationManager.requestSingleUpdate(criteria, locationListener, null);
-
+                //Calculamos el Geopoint
+                double lon = (double) (location.getLongitude() * 1E6);
+				double lati = (double) (location.getLatitude() * 1E6);
+				int lontitue = (int)lon;
+				int latitute = (int)lati;
+                               
+			        geopoint = new GeoPoint(latitute, lontitue);
+                                
+                //lo almacenamos                
                 try {
                     
                 FileOutputStream out = openFileOutput("location.txt",Context.MODE_PRIVATE);
@@ -282,8 +297,6 @@ public class HelloMapView extends MapActivity implements LocationListener
                 //Cerramos FileInputStream y InputStreamReader
                 isr.close();
                // in.close();                                  
-                Log.v(TAG, separated[0]);
-                Log.v(TAG, separated[1]); 
     
                 }catch (Throwable t) {
                     Toast.makeText(getApplicationContext(),t.toString(), Toast.LENGTH_SHORT).show();
@@ -324,11 +337,11 @@ public class HelloMapView extends MapActivity implements LocationListener
             case 5:
                      if(geopoint != null && geopoint2 !=null)
                      {
-                        Double res = this.getDistanceInKiloMeters(geopoint, geopoint2);
-                        String unidad=null;
-                        if (res >1) unidad="Kms."; else unidad="mts.";
-                              this.ViewDialog("Distancia aprox. de "+res.toString()+unidad);          
-                      //  Toast.makeText(getApplicationContext(),"Distancia aprox. de "+res.toString()+unidad, Toast.LENGTH_SHORT).show();
+                 Double res = this.getDistanceInKiloMeters(geopoint, geopoint2);
+                String unidad=null;
+                if (res >1) unidad="Kms."; else unidad="mts.";
+                      this.ViewDialog("Distancia aprox. de "+res.toString()+unidad); 
+       
                      }
                      else 
                        Toast.makeText(getApplicationContext(),"Falta ubicar origen o destino", Toast.LENGTH_SHORT).show();   
@@ -362,12 +375,11 @@ public class HelloMapView extends MapActivity implements LocationListener
     double lng2 = ((double)p2.getLongitudeE6()) / 1e6;
     Location locationA = new Location("point A");
     locationA.setLatitude(lat1);  
-    locationA.setLongitude(lng1);  
+    locationA.setLongitude(lng1);         
     Location locationB = new Location("point B"); 
     locationB.setLatitude(lat2);
     locationB.setLongitude(lng2);
     distance = locationA.distanceTo(locationB);  
-    Log.v(TAG, Double.toString(distance));
     if (distance>1000)
     return Math.round(distance/1000);
     else return Math.round(distance); 
