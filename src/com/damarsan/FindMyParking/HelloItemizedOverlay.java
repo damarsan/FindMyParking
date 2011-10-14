@@ -62,8 +62,9 @@ public class HelloItemizedOverlay extends ItemizedOverlay {
      mOverlays.clear();
  }
 
- public void deleteOverlay(OverlayItem overlay) {
-     mOverlays.remove(overlay);
+ public void removeOverlay(int i) {
+     mOverlays.remove(i);
+     populate();
  }
  
  @Override
