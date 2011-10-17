@@ -4,6 +4,7 @@ package com.damarsan.FindMyParking;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
 import android.location.Criteria;
@@ -11,6 +12,7 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Gravity;
@@ -45,10 +47,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-
-
-
-
 public class HelloMapView extends MapActivity implements LocationListener
 {
         MapController mapController;
@@ -57,8 +55,8 @@ public class HelloMapView extends MapActivity implements LocationListener
         Drawable drawable=null, drawable2;
         HelloItemizedOverlay itemizedOverlay;
         PolyLineDecoder decoder;
-        GeoPoint geopoint = null;
-        GeoPoint geopoint2 = null;
+        GeoPoint geopoint_p = null;
+        GeoPoint geopoint_u= null;
         Context mContext;
         Location location;
         LocationListener locationListener;
@@ -126,17 +124,11 @@ public class HelloMapView extends MapActivity implements LocationListener
            Log.v(TAG, "LOCATION: "+location.toString());
                 //Activamos la OverlayLayer y añadimos el recurso de imagen androidmarker
                 mapOverlays = mapview.getOverlays();
-
-                
                 drawable = this.getResources().getDrawable(R.drawable.androidmarker);
-
               //  itemizedOverlay = new HelloItemizedOverlay(drawable,mContext);
                   itemizedOverlay = new HelloItemizedOverlay(drawable,this);
               //  itemizedOverlay = new HelloItemizedOverlay(geopoint,geopoint2,drawable,mapview);
-                
                 locationListener = new LocationListener() {
-			
-			
                         // Acquire a reference to the system Location Manager
 			@Override
 			public void onStatusChanged(String provider, int status, Bundle extras) {
@@ -165,10 +157,11 @@ public class HelloMapView extends MapActivity implements LocationListener
 				double lat = (double) (location.getLatitude() * 1E6);
 				int lontitue = (int)lon;
 				int latitute = (int)lat;
-			        geopoint = new GeoPoint(latitute, lontitue);
-				mapController.animateTo(geopoint);  
+			        geopoint_u = new GeoPoint(latitute, lontitue);
+				mapController.animateTo(geopoint_u);  
+                                Log.v(TAG, "GEOPOINT_U: "+geopoint_u.toString());  
                                 //creamos el OverlayItem a partir del GeoPoint
-                                OverlayItem overlayitem = new OverlayItem(geopoint, "", "");
+                                OverlayItem overlayitem = new OverlayItem(geopoint_u, "", "");
                                 //Añadimos el item al Array de Overlays
                                 itemizedOverlay.addOverlay(overlayitem);
                                 //Añadimos a la lista de Overlays el item.
@@ -186,8 +179,8 @@ public class HelloMapView extends MapActivity implements LocationListener
             
                 
                 //Añadimos el item a la OverlayLayer
-                if (geopoint != null) {
-               OverlayItem overlayitem = new OverlayItem(geopoint, "", "");
+                if (geopoint_p != null) {
+               OverlayItem overlayitem = new OverlayItem(geopoint_p, "", "");
                itemizedOverlay.addOverlay(overlayitem);
                 mapOverlays.add(itemizedOverlay);
                 } else 	Toast.makeText(getApplicationContext(), "MAPA CARGADO", Toast.LENGTH_SHORT).show();         
@@ -240,7 +233,7 @@ public class HelloMapView extends MapActivity implements LocationListener
     {
         switch (item.getItemId())
         {
-            case 1:
+            case 1://Almacenar Parking
                 //Almacenamos la ubicación donde hemos aparcado
                 drawable = this.getResources().getDrawable(R.drawable.androidmarker);
                 //Calculamos el Geopoint
@@ -249,16 +242,15 @@ public class HelloMapView extends MapActivity implements LocationListener
 				int lontitue = (int)lon;
 				int latitute = (int)lati;
                                
-			        geopoint = new GeoPoint(latitute, lontitue);
+			        geopoint_p = new GeoPoint(latitute, lontitue);
                                 
                 //lo almacenamos                
-                try {
-                    
+                try {  
                 FileOutputStream out = openFileOutput("location.txt",Context.MODE_PRIVATE);
                 OutputStreamWriter osw = new OutputStreamWriter(out);
-                osw.write(Double.toString(geopoint.getLongitudeE6() / 1E6));
+                osw.write(Double.toString(geopoint_p.getLongitudeE6() / 1E6));
                 osw.write("\n");
-                osw.write(Double.toString(geopoint.getLatitudeE6() / 1E6));
+                osw.write(Double.toString(geopoint_p.getLatitudeE6() / 1E6));
                 osw.flush();
                 osw.close();
                	Toast.makeText(getApplicationContext(), "Ubicación de Parking Almacenada", Toast.LENGTH_SHORT).show();
@@ -269,7 +261,7 @@ public class HelloMapView extends MapActivity implements LocationListener
            
                 return(true);
                 
-            case 2:
+            case 2: //Donde estoy
                  //Cambiamos el icono de ubicación               
                  drawable = this.getResources().getDrawable(R.drawable.androidmarker);
                  drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
@@ -277,7 +269,7 @@ public class HelloMapView extends MapActivity implements LocationListener
                  locationManager.requestSingleUpdate(criteria, locationListener, null);
                 return(true);
                 
-            case 3:
+            case 3: //Recuperar Parking
                 
                 //Obtenemos la ubicación almacenada y la mostramos
                 String[] separated=null;
@@ -305,15 +297,16 @@ public class HelloMapView extends MapActivity implements LocationListener
                 double lng = Double.parseDouble(separated[0]);
                 double lat = Double.parseDouble(separated[1]);
                 
-
-               geopoint2 = new GeoPoint((int)(lat*1E6),(int)(lng*1E6));
+              
+               geopoint_p = new GeoPoint((int)(lat*1E6),(int)(lng*1E6));
+      
              //   mapController.setZoom(18); 
-                mapController.animateTo(geopoint2);
+                mapController.animateTo(geopoint_p);
+                 Log.v(TAG, "GEOPOINT_P: "+geopoint_p.toString());
+              
+            
                  
-                 
-                Log.v(TAG, geopoint2.toString());
-                 
-                OverlayItem overlayitem2 = new OverlayItem(geopoint2, "", "");
+                OverlayItem overlayitem2 = new OverlayItem(geopoint_p, "", "");
                 drawable2 = this.getResources().getDrawable(R.drawable.parking);
                 drawable2.setBounds(0, 0, drawable2.getIntrinsicWidth(), drawable2.getIntrinsicHeight());
                 overlayitem2.setMarker(drawable2);
@@ -324,28 +317,40 @@ public class HelloMapView extends MapActivity implements LocationListener
                 Toast.makeText(getApplicationContext(), "Ubicación de Parking Recuperada", Toast.LENGTH_SHORT).show();
                 return(true);
                 
-            case 4:
+            case 4: //Limpiar Ubicaciones
                 if(!mapOverlays.isEmpty()) 
                     { 
                         itemizedOverlay.clearOverlay();
                         mapOverlays.clear();
                         mapview.postInvalidate();
+                        geopoint_p = null; geopoint_u=null;
                     } else Toast.makeText(getApplicationContext(),"No hay ubicaciones", Toast.LENGTH_SHORT).show();
 
                 return(true);
                 
-            case 5:
-                     if(geopoint != null && geopoint2 !=null)
-                     {
-                 Double res = this.getDistanceInKiloMeters(geopoint, geopoint2);
+            case 5: //Calcular Distancia
+                     if(geopoint_p != null && geopoint_u !=null)
+                     {                 
+                 Double res = this.getDistanceInKiloMeters(geopoint_p, geopoint_u);
                 String unidad=null;
                 if (res >1) unidad="Kms."; else unidad="mts.";
                       this.ViewDialog("Distancia aprox. de "+res.toString()+unidad); 
-       
+                      double lat_geopoint_u = ((double)geopoint_u.getLatitudeE6()) / 1e6;
+                      double lon_geopoint_u = ((double)geopoint_u.getLongitudeE6()) / 1e6;
+                      double lat_geopoint_p = ((double)geopoint_p.getLatitudeE6()) / 1e6; 
+                      double lon_geopoint_p = ((double)geopoint_p.getLongitudeE6()) / 1e6;
+                      //generamos el intent para llamar a la aplicacion de google maps
+                Intent intent = new Intent(android.content.Intent.ACTION_VIEW,       
+                 Uri.parse("http://maps.google.com/maps?saddr="+
+                 Double.toString(lat_geopoint_u)+","+Double.toString(lon_geopoint_u)+"&daddr="+Double.toString(lat_geopoint_p)+
+                 ","+Double.toString(lon_geopoint_p)));
+                 startActivity(intent);
                      }
                      else 
-                       Toast.makeText(getApplicationContext(),"Falta ubicar origen o destino", Toast.LENGTH_SHORT).show();   
+                       Toast.makeText(getApplicationContext(),"Falta ubicar origen o destino", Toast.LENGTH_SHORT).show();
+                     
                 return(true);
+                
 
         }
         return (false);
