@@ -2,6 +2,7 @@ package com.damarsan.FindMyParking;
 
 //import android.R;
 import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -14,6 +15,7 @@ import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -22,6 +24,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 import com.google.android.maps.GeoPoint;
@@ -54,7 +57,7 @@ public class HelloMapView extends MapActivity implements LocationListener
         List<Overlay> mapOverlays;
         Drawable drawable=null, drawable2;
         HelloItemizedOverlay itemizedOverlay;
-        PolyLineDecoder decoder;
+      //  PolyLineDecoder decoder;
         GeoPoint geopoint_p = null;
         GeoPoint geopoint_u= null;
         Context mContext;
@@ -83,7 +86,7 @@ public class HelloMapView extends MapActivity implements LocationListener
         alertDialog.setButton("OK", new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int which) {
                 try {
-                        System.exit(0);
+                     startActivity(new Intent(Settings.ACTION_DATA_ROAMING_SETTINGS));
                 } catch(Throwable t){}; 
             }
                 });
@@ -91,6 +94,10 @@ public class HelloMapView extends MapActivity implements LocationListener
             alertDialog.show();
        } 
         
+        ProgressDialog dialog = ProgressDialog.show(this, "", 
+                        "Obteniendo Mapa...", true);
+        dialog.show();
+       
         mapview = (MapView)findViewById(R.id.mapview);        
 	mapview.setBuiltInZoomControls(true);  //activamos controles de Zoom
 	mapController = mapview.getController();
@@ -118,10 +125,8 @@ public class HelloMapView extends MapActivity implements LocationListener
           
            //Obtenemos el mejor proveedor con los criterios descritos anteriormente
            provider = locationManager.getBestProvider(criteria, true);
-           Log.v(TAG, "PROVIDER: "+provider.toString());
            //
            location = locationManager.getLastKnownLocation(provider);
-           Log.v(TAG, "LOCATION: "+location.toString());
                 //Activamos la OverlayLayer y añadimos el recurso de imagen androidmarker
                 mapOverlays = mapview.getOverlays();
                 drawable = this.getResources().getDrawable(R.drawable.androidmarker);
@@ -179,6 +184,7 @@ public class HelloMapView extends MapActivity implements LocationListener
             
                 
                 //Añadimos el item a la OverlayLayer
+                dialog.dismiss();
                 if (geopoint_p != null) {
                OverlayItem overlayitem = new OverlayItem(geopoint_p, "", "");
                itemizedOverlay.addOverlay(overlayitem);
@@ -262,11 +268,16 @@ public class HelloMapView extends MapActivity implements LocationListener
                 return(true);
                 
             case 2: //Donde estoy
+                  ProgressDialog dialog = ProgressDialog.show(this, "", 
+                        "Obteniendo Ubicación...", true);
+                  dialog.show();
                  //Cambiamos el icono de ubicación               
                  drawable = this.getResources().getDrawable(R.drawable.androidmarker);
                  drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
                 //Obtenemos la ubicación actual
                  locationManager.requestSingleUpdate(criteria, locationListener, null);
+                 if(geopoint_p != null && geopoint_u !=null) this.centerMapView();
+                  dialog.dismiss();  
                 return(true);
                 
             case 3: //Recuperar Parking
@@ -296,16 +307,10 @@ public class HelloMapView extends MapActivity implements LocationListener
                 
                 double lng = Double.parseDouble(separated[0]);
                 double lat = Double.parseDouble(separated[1]);
-                
-              
                geopoint_p = new GeoPoint((int)(lat*1E6),(int)(lng*1E6));
       
              //   mapController.setZoom(18); 
-                mapController.animateTo(geopoint_p);
-                 Log.v(TAG, "GEOPOINT_P: "+geopoint_p.toString());
-              
-            
-                 
+                mapController.animateTo(geopoint_p);              
                 OverlayItem overlayitem2 = new OverlayItem(geopoint_p, "", "");
                 drawable2 = this.getResources().getDrawable(R.drawable.parking);
                 drawable2.setBounds(0, 0, drawable2.getIntrinsicWidth(), drawable2.getIntrinsicHeight());
@@ -313,7 +318,9 @@ public class HelloMapView extends MapActivity implements LocationListener
                 itemizedOverlay.addOverlay(overlayitem2);
                // mapOverlays.clear();
                 mapOverlays.add(itemizedOverlay);
-                mapview.invalidate();
+                mapview.invalidate();                                        
+                if(geopoint_p != null && geopoint_u !=null) this.centerMapView();
+
                 Toast.makeText(getApplicationContext(), "Ubicación de Parking Recuperada", Toast.LENGTH_SHORT).show();
                 return(true);
                 
@@ -339,6 +346,7 @@ public class HelloMapView extends MapActivity implements LocationListener
                       double lon_geopoint_u = ((double)geopoint_u.getLongitudeE6()) / 1e6;
                       double lat_geopoint_p = ((double)geopoint_p.getLatitudeE6()) / 1e6; 
                       double lon_geopoint_p = ((double)geopoint_p.getLongitudeE6()) / 1e6;
+                      this.centerMapView();
                       //generamos el intent para llamar a la aplicacion de google maps
                 Intent intent = new Intent(android.content.Intent.ACTION_VIEW,       
                  Uri.parse("http://maps.google.com/maps?saddr="+
@@ -403,8 +411,9 @@ public class HelloMapView extends MapActivity implements LocationListener
                                         toast.setDuration(Toast.LENGTH_LONG);
                                         toast.setView(layout);
                                         toast.show();
-        
                                         }
+                        
+                     
                         
                         
       private boolean checkInternetConnection() {
@@ -425,7 +434,16 @@ public class HelloMapView extends MapActivity implements LocationListener
                             return false;
                             }
 
-        }    
+       }
+     
+      private void centerMapView() {
+      
+                mapController.zoomToSpan(itemizedOverlay.getLatSpanE6(), itemizedOverlay.getLonSpanE6());
+
+
+
+          
+      }
 
     
 }  //FIN DE LA CLASE
