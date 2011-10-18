@@ -68,7 +68,9 @@ public class HelloMapView extends MapActivity implements LocationListener
         String provider;
         Criteria criteria;
         Canvas c1 = new Canvas();
+        private ProgressDialog dialog;
         StringBuilder response = new StringBuilder();
+        
         
 	/** Called when the activity is first created. */
     @Override
@@ -94,10 +96,8 @@ public class HelloMapView extends MapActivity implements LocationListener
             alertDialog.show();
        } 
         
-        ProgressDialog dialog = ProgressDialog.show(this, "", 
-                        "Obteniendo Mapa...", true);
-        dialog.show();
-       
+     
+        
         mapview = (MapView)findViewById(R.id.mapview);        
 	mapview.setBuiltInZoomControls(true);  //activamos controles de Zoom
 	mapController = mapview.getController();
@@ -118,8 +118,8 @@ public class HelloMapView extends MapActivity implements LocationListener
           //Alta precisión horizontal y vertical
           criteria.setHorizontalAccuracy(Criteria.ACCURACY_HIGH);
           criteria.setVerticalAccuracy(Criteria.ACCURACY_HIGH);
-          
-          
+          //Mostramos dialogo de carga
+          this.runDialog(3);
           //En primer lugar se instancia el LocationManager
           locationManager = (LocationManager)getSystemService(LOCATION_SERVICE);
           
@@ -132,6 +132,7 @@ public class HelloMapView extends MapActivity implements LocationListener
                 drawable = this.getResources().getDrawable(R.drawable.androidmarker);
               //  itemizedOverlay = new HelloItemizedOverlay(drawable,mContext);
                   itemizedOverlay = new HelloItemizedOverlay(drawable,this);
+                  
               //  itemizedOverlay = new HelloItemizedOverlay(geopoint,geopoint2,drawable,mapview);
                 locationListener = new LocationListener() {
                         // Acquire a reference to the system Location Manager
@@ -151,9 +152,7 @@ public class HelloMapView extends MapActivity implements LocationListener
 			}
 			@Override
 			public void onLocationChanged(Location location) {
-                            Log.v(TAG, "ENTRA EN ONLOCATIONCHANGED");
 				makeUseOfNewLocation(location);
-				//Toast.makeText(getApplicationContext(), "New Locationdd", Toast.LENGTH_LONG).show();
 			}
 			public void makeUseOfNewLocation(Location location) {                            
 			
@@ -164,17 +163,15 @@ public class HelloMapView extends MapActivity implements LocationListener
 				int latitute = (int)lat;
 			        geopoint_u = new GeoPoint(latitute, lontitue);
 				mapController.animateTo(geopoint_u);  
-                                Log.v(TAG, "GEOPOINT_U: "+geopoint_u.toString());  
                                 //creamos el OverlayItem a partir del GeoPoint
                                 OverlayItem overlayitem = new OverlayItem(geopoint_u, "", "");
                                 //Añadimos el item al Array de Overlays
                                 itemizedOverlay.addOverlay(overlayitem);
                                 //Añadimos a la lista de Overlays el item.
-                                mapOverlays.add(itemizedOverlay);          
+                                mapOverlays.add(itemizedOverlay); 
+                                if(geopoint_p != null && geopoint_u !=null)  centerMapView();
 				mapview.invalidate();
-			}
-                        
-                       
+			}         
 		};   //FIN DE LOCATION LISTENER
  
                 //Establecemos que las actualizaciones se realizen si hay 5 metros de distancia desde la última
@@ -183,13 +180,15 @@ public class HelloMapView extends MapActivity implements LocationListener
 	//	locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,0,5,locationListener);
             
                 
-                //Añadimos el item a la OverlayLayer
-                dialog.dismiss();
+                //Añadimos el item a la OverlayLayer   
                 if (geopoint_p != null) {
                OverlayItem overlayitem = new OverlayItem(geopoint_p, "", "");
                itemizedOverlay.addOverlay(overlayitem);
                 mapOverlays.add(itemizedOverlay);
-                } else 	Toast.makeText(getApplicationContext(), "MAPA CARGADO", Toast.LENGTH_SHORT).show();         
+                } else {
+                    Toast.makeText(getApplicationContext(), "MAPA CARGADO", Toast.LENGTH_SHORT).show();
+                } 	
+                             
     }  // FIN DE ONCREATE()
 	@Override
 	protected boolean isRouteDisplayed() {
@@ -213,6 +212,7 @@ public class HelloMapView extends MapActivity implements LocationListener
         menu.add(Menu.NONE, 3, Menu.NONE, "Recuperar Parking");
         menu.add(Menu.NONE, 4, Menu.NONE, "Limpiar Ubicaciones");
         menu.add(Menu.NONE, 5, Menu.NONE, "Calcular Distancia");
+        menu.add(Menu.NONE, 6, Menu.NONE, "Mostrar Ruta");
        // throw new UnsupportedOperationException("Not yet implemented");
     }
     
@@ -268,17 +268,13 @@ public class HelloMapView extends MapActivity implements LocationListener
                 return(true);
                 
             case 2: //Donde estoy
-                  ProgressDialog dialog = ProgressDialog.show(this, "", 
-                        "Obteniendo Ubicación...", true);
-                  dialog.show();
+                  this.runDialog(3);
                  //Cambiamos el icono de ubicación               
                  drawable = this.getResources().getDrawable(R.drawable.androidmarker);
                  drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
                 //Obtenemos la ubicación actual
                  locationManager.requestSingleUpdate(criteria, locationListener, null);
-                 if(geopoint_p != null && geopoint_u !=null) this.centerMapView();
-                  dialog.dismiss();  
-                return(true);
+                 return(true);
                 
             case 3: //Recuperar Parking
                 
@@ -341,7 +337,16 @@ public class HelloMapView extends MapActivity implements LocationListener
                  Double res = this.getDistanceInKiloMeters(geopoint_p, geopoint_u);
                 String unidad=null;
                 if (res >1) unidad="Kms."; else unidad="mts.";
-                      this.ViewDialog("Distancia aprox. de "+res.toString()+unidad); 
+                      this.ViewDialog("Distancia aprox. de "+res.toString()+unidad);      
+                     }
+                     else 
+                       Toast.makeText(getApplicationContext(),"Falta ubicar origen y/o destino", Toast.LENGTH_SHORT).show();
+                     
+                return(true);
+                
+                 case 6: //Mostrar Ruta
+                      if(geopoint_p != null && geopoint_u !=null)
+                     {
                       double lat_geopoint_u = ((double)geopoint_u.getLatitudeE6()) / 1e6;
                       double lon_geopoint_u = ((double)geopoint_u.getLongitudeE6()) / 1e6;
                       double lat_geopoint_p = ((double)geopoint_p.getLatitudeE6()) / 1e6; 
@@ -353,12 +358,8 @@ public class HelloMapView extends MapActivity implements LocationListener
                  Double.toString(lat_geopoint_u)+","+Double.toString(lon_geopoint_u)+"&daddr="+Double.toString(lat_geopoint_p)+
                  ","+Double.toString(lon_geopoint_p)));
                  startActivity(intent);
-                     }
-                     else 
-                       Toast.makeText(getApplicationContext(),"Falta ubicar origen o destino", Toast.LENGTH_SHORT).show();
-                     
-                return(true);
-                
+                     } else  Toast.makeText(getApplicationContext(),"Falta ubicar origen y/o destino", Toast.LENGTH_SHORT).show();
+                 return(true);
 
         }
         return (false);
@@ -437,13 +438,22 @@ public class HelloMapView extends MapActivity implements LocationListener
        }
      
       private void centerMapView() {
-      
-                mapController.zoomToSpan(itemizedOverlay.getLatSpanE6(), itemizedOverlay.getLonSpanE6());
-
-
-
-          
+                mapController.zoomToSpan(itemizedOverlay.getLatSpanE6(), itemizedOverlay.getLonSpanE6());      
       }
+      
+      
+      private void runDialog(final int seconds)
+	{
+	        dialog = ProgressDialog.show(this, "", "Obteniendo Ubicación...");
+	        new Thread(new Runnable(){
+	            public void run(){
+	                try {
+	                            Thread.sleep(seconds * 1000);
+	                    dialog.dismiss();
+	                } catch (InterruptedException e) { }
+	            }
+	        }).start();
+	}
 
     
 }  //FIN DE LA CLASE
