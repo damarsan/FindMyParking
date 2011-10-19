@@ -38,6 +38,7 @@ import java.io.BufferedReader;
 import java.net.MalformedURLException;
 import java.util.List;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -235,7 +236,7 @@ public class HelloMapView extends MapActivity implements LocationListener
     
     //AÑADIMOS LAS ACCIONES DEL MENU
     
-    private boolean applyMenuChoice(MenuItem item) throws MalformedURLException, IOException
+    private boolean applyMenuChoice(MenuItem item) throws MalformedURLException
     {
         switch (item.getItemId())
         {
@@ -280,7 +281,7 @@ public class HelloMapView extends MapActivity implements LocationListener
                 
                 //Obtenemos la ubicación almacenada y la mostramos
                 String[] separated=null;
-                try {
+               try {
                 FileInputStream in = openFileInput("location.txt");
                 InputStreamReader isr = new InputStreamReader(in);
                 BufferedReader reader = new BufferedReader(isr);
@@ -296,15 +297,15 @@ public class HelloMapView extends MapActivity implements LocationListener
                 //Cerramos FileInputStream y InputStreamReader
                 isr.close();
                // in.close();                                  
-    
-                }catch (Throwable t) {
-                    Toast.makeText(getApplicationContext(),t.toString(), Toast.LENGTH_SHORT).show();
-                }
-                
+               
                 double lng = Double.parseDouble(separated[0]);
                 double lat = Double.parseDouble(separated[1]);
                geopoint_p = new GeoPoint((int)(lat*1E6),(int)(lng*1E6));
-      
+           //    } catch (Exception e) {
+          //         Toast.makeText(getApplicationContext(),"No hay ninguna ubicación almacenada", Toast.LENGTH_SHORT).show();
+          //     }
+                  
+               
              //   mapController.setZoom(18); 
                 mapController.animateTo(geopoint_p);              
                 OverlayItem overlayitem2 = new OverlayItem(geopoint_p, "", "");
@@ -314,10 +315,16 @@ public class HelloMapView extends MapActivity implements LocationListener
                 itemizedOverlay.addOverlay(overlayitem2);
                // mapOverlays.clear();
                 mapOverlays.add(itemizedOverlay);
-                mapview.invalidate();                                        
-                if(geopoint_p != null && geopoint_u !=null) this.centerMapView();
-
-                Toast.makeText(getApplicationContext(), "Ubicación de Parking Recuperada", Toast.LENGTH_SHORT).show();
+                mapview.invalidate(); 
+                
+                 } catch (Exception e) {
+                   Toast.makeText(getApplicationContext(),"No hay ninguna ubicación almacenada", Toast.LENGTH_SHORT).show();
+               }
+                if(geopoint_p != null && geopoint_u !=null)
+                {
+                    this.centerMapView();
+                    Toast.makeText(getApplicationContext(), "Ubicación de Parking Recuperada", Toast.LENGTH_SHORT).show();
+                }
                 return(true);
                 
             case 4: //Limpiar Ubicaciones
