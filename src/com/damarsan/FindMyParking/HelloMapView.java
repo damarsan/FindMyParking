@@ -24,7 +24,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 import com.google.android.maps.GeoPoint;
@@ -33,28 +32,17 @@ import com.google.android.maps.MapController;
 import com.google.android.maps.MapView;
 import com.google.android.maps.Overlay;
 import com.google.android.maps.OverlayItem;
-import com.google.android.maps.Projection;
-import java.io.BufferedReader;
+
+import java.io.*;
 import java.net.MalformedURLException;
 import java.util.List;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 public class HelloMapView extends MapActivity implements LocationListener
 {
         MapController mapController;
-	MapView mapview;
+	    MapView mapview;
         List<Overlay> mapOverlays;
         Drawable drawable=null, drawable2;
         HelloItemizedOverlay itemizedOverlay;
@@ -71,7 +59,7 @@ public class HelloMapView extends MapActivity implements LocationListener
         Canvas c1 = new Canvas();
         private ProgressDialog dialog;
         StringBuilder response = new StringBuilder();
-        
+        String unidad=null;
         
 	/** Called when the activity is first created. */
     @Override
@@ -97,7 +85,7 @@ public class HelloMapView extends MapActivity implements LocationListener
             alertDialog.show();
        } 
         
-     
+        if (!checkFirstTime()) Log.v(TAG,"OK, ya se había almacenado el parking"); else  Log.v(TAG,"NO ESTA almacenado el parking");
         
         mapview = (MapView)findViewById(R.id.mapview);        
 	mapview.setBuiltInZoomControls(true);  //activamos controles de Zoom
@@ -263,7 +251,6 @@ public class HelloMapView extends MapActivity implements LocationListener
                	Toast.makeText(getApplicationContext(), "Ubicación de Parking Almacenada", Toast.LENGTH_SHORT).show();
                 }
                 catch (IOException t) {
-                    Log.v(TAG, "MIERRRDAAA");
                 }
            
                 return(true);
@@ -300,11 +287,7 @@ public class HelloMapView extends MapActivity implements LocationListener
                
                 double lng = Double.parseDouble(separated[0]);
                 double lat = Double.parseDouble(separated[1]);
-               geopoint_p = new GeoPoint((int)(lat*1E6),(int)(lng*1E6));
-           //    } catch (Exception e) {
-          //         Toast.makeText(getApplicationContext(),"No hay ninguna ubicación almacenada", Toast.LENGTH_SHORT).show();
-          //     }
-                  
+                geopoint_p = new GeoPoint((int)(lat*1E6),(int)(lng*1E6));
                
              //   mapController.setZoom(18); 
                 mapController.animateTo(geopoint_p);              
@@ -342,8 +325,7 @@ public class HelloMapView extends MapActivity implements LocationListener
                      if(geopoint_p != null && geopoint_u !=null)
                      {                 
                  Double res = this.getDistanceInKiloMeters(geopoint_p, geopoint_u);
-                String unidad=null;
-                if (res >1) unidad="Kms."; else unidad="mts.";
+
                       this.ViewDialog("Distancia aprox. de "+res.toString()+unidad);      
                      }
                      else 
@@ -400,10 +382,18 @@ public class HelloMapView extends MapActivity implements LocationListener
     Location locationB = new Location("point B"); 
     locationB.setLatitude(lat2);
     locationB.setLongitude(lng2);
-    distance = locationA.distanceTo(locationB);  
+    distance = locationA.distanceTo(locationB);
+        Log.v(TAG,"DISTANCIA: "+Double.toString(distance));
     if (distance>1000)
-    return Math.round(distance/1000);
-    else return Math.round(distance); 
+    {
+       unidad ="Kms";
+        return Math.round(distance/1000);
+    }
+
+    else {
+        unidad="mts.";
+        return Math.round(distance);
+        }
     }
     
                         public void ViewDialog(String aux) {
@@ -446,6 +436,19 @@ public class HelloMapView extends MapActivity implements LocationListener
      
       private void centerMapView() {
                 mapController.zoomToSpan(itemizedOverlay.getLatSpanE6(), itemizedOverlay.getLonSpanE6());      
+      }
+    
+      private boolean checkFirstTime()
+      {
+          boolean  res=false;
+          FileInputStream in2=null;
+          try {
+          in2 = openFileInput("location.txt");
+          in2.close();
+      } catch (IOException e) {
+        res = true;
+      }
+          return res;
       }
       
       
