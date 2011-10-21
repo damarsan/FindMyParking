@@ -71,6 +71,7 @@ public class HelloMapView extends MapActivity implements LocationListener
         Canvas c1 = new Canvas();
         private ProgressDialog dialog;
         StringBuilder response = new StringBuilder();
+        String unidad=null;
         
         
 	/** Called when the activity is first created. */
@@ -263,7 +264,6 @@ public class HelloMapView extends MapActivity implements LocationListener
                	Toast.makeText(getApplicationContext(), "Ubicación de Parking Almacenada", Toast.LENGTH_SHORT).show();
                 }
                 catch (IOException t) {
-                    Log.v(TAG, "MIERRRDAAA");
                 }
            
                 return(true);
@@ -342,8 +342,6 @@ public class HelloMapView extends MapActivity implements LocationListener
                      if(geopoint_p != null && geopoint_u !=null)
                      {                 
                  Double res = this.getDistanceInKiloMeters(geopoint_p, geopoint_u);
-                String unidad=null;
-                if (res >1) unidad="Kms."; else unidad="mts.";
                       this.ViewDialog("Distancia aprox. de "+res.toString()+unidad);      
                      }
                      else 
@@ -402,8 +400,15 @@ public class HelloMapView extends MapActivity implements LocationListener
     locationB.setLongitude(lng2);
     distance = locationA.distanceTo(locationB);  
     if (distance>1000)
-    return Math.round(distance/1000);
-    else return Math.round(distance); 
+    {
+       unidad ="Kms";
+        return Math.round(distance/1000);
+    }
+
+    else {
+        unidad="mts.";
+        return Math.round(distance);
+        }
     }
     
                         public void ViewDialog(String aux) {
