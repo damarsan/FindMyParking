@@ -6,6 +6,7 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
 import android.location.Criteria;
@@ -23,6 +24,8 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -46,7 +49,6 @@ public class HelloMapView extends MapActivity implements LocationListener
         List<Overlay> mapOverlays;
         Drawable drawable=null, drawable2;
         HelloItemizedOverlay itemizedOverlay;
-      //  PolyLineDecoder decoder;
         GeoPoint geopoint_p = null;
         GeoPoint geopoint_u= null;
         Context mContext;
@@ -60,14 +62,13 @@ public class HelloMapView extends MapActivity implements LocationListener
         private ProgressDialog dialog;
         StringBuilder response = new StringBuilder();
         String unidad=null;
-        
+
 	/** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState) {
     	
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.main);   
-
+        setContentView(R.layout.main);
 
        if(!this.checkInternetConnection())
        {
@@ -87,7 +88,7 @@ public class HelloMapView extends MapActivity implements LocationListener
         
         if (!checkFirstTime()) Log.v(TAG,"OK, ya se había almacenado el parking"); else  Log.v(TAG,"NO ESTA almacenado el parking");
         
-        mapview = (MapView)findViewById(R.id.mapview);        
+    mapview = (MapView)findViewById(R.id.mapview);
 	mapview.setBuiltInZoomControls(true);  //activamos controles de Zoom
 	mapController = mapview.getController();
 	mapController.setZoom(18);
@@ -262,6 +263,7 @@ public class HelloMapView extends MapActivity implements LocationListener
                  drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
                 //Obtenemos la ubicación actual
                  locationManager.requestSingleUpdate(criteria, locationListener, null);
+                 callFoursquare();
                  return(true);
                 
             case 3: //Recuperar Parking
@@ -450,6 +452,13 @@ public class HelloMapView extends MapActivity implements LocationListener
       }
           return res;
       }
+    
+    
+    public void callFoursquare()
+    {
+        Intent intent = new Intent(HelloMapView.this, ActivityWebView.class);
+        startActivity(intent);
+    }
       
       
       private void runDialog(final int seconds)

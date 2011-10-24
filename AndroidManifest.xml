@@ -11,6 +11,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".ActivityWebView"/>
         <uses-library android:name="com.google.android.maps" />
     </application>
        <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
