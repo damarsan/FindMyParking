@@ -14,6 +14,7 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
@@ -72,7 +73,7 @@ public class HelloMapView extends MapActivity implements LocationListener
 
        if(!this.checkInternetConnection())
        {
-        AlertDialog alertDialog = new AlertDialog.Builder(this).create();
+      /*  AlertDialog alertDialog = new AlertDialog.Builder(this).create();
         alertDialog.setTitle("AVISO");
         alertDialog.setMessage("Se requiere conexión a Internet");
         alertDialog.setButton("OK", new DialogInterface.OnClickListener() {
@@ -84,10 +85,17 @@ public class HelloMapView extends MapActivity implements LocationListener
                 });
             alertDialog.setIcon(R.drawable.icon);
             alertDialog.show();
-       } 
+            */
+
+        //   createDialog("AVISO","Se requiere conexión a Internet","l");
+       }
+
+        if(!checkGPS()) {
+        //    createDialog("AVISO","Es recomendable activar el GPS para mejorar precisión","g");
+        }
         
         if (!checkFirstTime()) Log.v(TAG,"OK, ya se había almacenado el parking"); else  Log.v(TAG,"NO ESTA almacenado el parking");
-        
+
     mapview = (MapView)findViewById(R.id.mapview);
 	mapview.setBuiltInZoomControls(true);  //activamos controles de Zoom
 	mapController = mapview.getController();
@@ -97,7 +105,7 @@ public class HelloMapView extends MapActivity implements LocationListener
           criteria = new Criteria();
           //precisión elevada
           criteria.setAccuracy(Criteria.ACCURACY_FINE);
-          //no se requiere informaciñón de altitud
+          //no se requiere información de altitud
           criteria.setAltitudeRequired(false);
           //no se requiere información de rumbo
           criteria.setBearingRequired(false);
@@ -120,11 +128,8 @@ public class HelloMapView extends MapActivity implements LocationListener
                 //Activamos la OverlayLayer y añadimos el recurso de imagen androidmarker
                 mapOverlays = mapview.getOverlays();
                 drawable = this.getResources().getDrawable(R.drawable.androidmarker);
-              //  itemizedOverlay = new HelloItemizedOverlay(drawable,mContext);
                   itemizedOverlay = new HelloItemizedOverlay(drawable,this);
-                  
-              //  itemizedOverlay = new HelloItemizedOverlay(geopoint,geopoint2,drawable,mapview);
-                locationListener = new LocationListener() {
+                  locationListener = new LocationListener() {
                         // Acquire a reference to the system Location Manager
 			@Override
 			public void onStatusChanged(String provider, int status, Bundle extras) {
@@ -146,13 +151,14 @@ public class HelloMapView extends MapActivity implements LocationListener
 			}
 			public void makeUseOfNewLocation(Location location) {                            
 			
-                          if(itemizedOverlay.size() == 2) itemizedOverlay.removeOverlay(0);           
+                          if(itemizedOverlay.size() != 0)
+                              itemizedOverlay.removeOverlay(0);
                                 double lon = (double) (location.getLongitude() * 1E6);
-				double lat = (double) (location.getLatitude() * 1E6);
-				int lontitue = (int)lon;
-				int latitute = (int)lat;
-			        geopoint_u = new GeoPoint(latitute, lontitue);
-				mapController.animateTo(geopoint_u);  
+				                double lat = (double) (location.getLatitude() * 1E6);
+				                int lontitue = (int)lon;
+				                int latitute = (int)lat;
+			                    geopoint_u = new GeoPoint(latitute, lontitue);
+				                mapController.animateTo(geopoint_u);
                                 //creamos el OverlayItem a partir del GeoPoint
                                 OverlayItem overlayitem = new OverlayItem(geopoint_u, "", "");
                                 //Añadimos el item al Array de Overlays
@@ -160,14 +166,14 @@ public class HelloMapView extends MapActivity implements LocationListener
                                 //Añadimos a la lista de Overlays el item.
                                 mapOverlays.add(itemizedOverlay); 
                                 if(geopoint_p != null && geopoint_u !=null)  centerMapView();
-				mapview.invalidate();
+				                mapview.invalidate();
 			}         
 		};   //FIN DE LOCATION LISTENER
  
                 //Establecemos que las actualizaciones se realizen si hay 5 metros de distancia desde la última
-	//	locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,0,5,locationListener);               
+		locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,0,5,locationListener);
                 // Register the listener with the Location Manager to receive location updates
-	//	locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,0,5,locationListener);
+		locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,0,5,locationListener);
             
                 
                 //Añadimos el item a la OverlayLayer   
@@ -263,7 +269,7 @@ public class HelloMapView extends MapActivity implements LocationListener
                  drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
                 //Obtenemos la ubicación actual
                  locationManager.requestSingleUpdate(criteria, locationListener, null);
-                 callFoursquare();
+               //  callFoursquare();
                  return(true);
                 
             case 3: //Recuperar Parking
@@ -279,6 +285,7 @@ public class HelloMapView extends MapActivity implements LocationListener
                 while ((str = reader.readLine()) != null) {
                     buf.append(str+"\n");
                 }
+
                 //separamos la longitud y latitud
                 separated = buf.toString().split("\n");
                 separated[0].trim();
@@ -287,10 +294,9 @@ public class HelloMapView extends MapActivity implements LocationListener
                 isr.close();
                // in.close();                                  
                
-                double lng = Double.parseDouble(separated[0]);
-                double lat = Double.parseDouble(separated[1]);
+               double lng = Double.parseDouble(separated[0]);
+               double lat = Double.parseDouble(separated[1]);
                 geopoint_p = new GeoPoint((int)(lat*1E6),(int)(lng*1E6));
-               
              //   mapController.setZoom(18); 
                 mapController.animateTo(geopoint_p);              
                 OverlayItem overlayitem2 = new OverlayItem(geopoint_p, "", "");
@@ -300,10 +306,11 @@ public class HelloMapView extends MapActivity implements LocationListener
                 itemizedOverlay.addOverlay(overlayitem2);
                // mapOverlays.clear();
                 mapOverlays.add(itemizedOverlay);
-                mapview.invalidate(); 
-                
+                mapview.invalidate();
+                   this.ViewDialog("Precisión aprox. de "+location.getAccuracy()+ " mts.");
+
                  } catch (Exception e) {
-                   Toast.makeText(getApplicationContext(),"No hay ninguna ubicación almacenada", Toast.LENGTH_SHORT).show();
+                   Toast.makeText(getApplicationContext(),"No hay ubicación almacenada", Toast.LENGTH_SHORT).show();
                }
                 if(geopoint_p != null && geopoint_u !=null)
                 {
@@ -385,15 +392,14 @@ public class HelloMapView extends MapActivity implements LocationListener
     locationB.setLatitude(lat2);
     locationB.setLongitude(lng2);
     distance = locationA.distanceTo(locationB);
-        Log.v(TAG,"DISTANCIA: "+Double.toString(distance));
     if (distance>1000)
     {
-       unidad ="Kms";
+       unidad =" Kms";
         return Math.round(distance/1000);
     }
 
     else {
-        unidad="mts.";
+        unidad=" Mts.";
         return Math.round(distance);
         }
     }
@@ -414,27 +420,50 @@ public class HelloMapView extends MapActivity implements LocationListener
                                         }
                         
                      
-                        
+        private void createDialog(String title, final String comment, final char type)
+        {
+        AlertDialog alertDialog = new AlertDialog.Builder(this).create();
+        alertDialog.setTitle(title);
+        alertDialog.setMessage(comment);
+        alertDialog.setButton("OK", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int which) {
+                try {
+                 //   if (!(type != "l")) {
+                            startActivity(new Intent(Settings.ACTION_DATA_ROAMING_SETTINGS));
+                 //       } else {
+                //    startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS));
+               // }
+
+                } catch(Throwable t){};
+            }
+                });
+            alertDialog.setIcon(R.drawable.icon);
+            alertDialog.show();
+       }
+
+
                         
       private boolean checkInternetConnection() {
 
         ConnectivityManager conMgr = (ConnectivityManager) getSystemService (Context.CONNECTIVITY_SERVICE);
-
             // ARE WE CONNECTED TO THE NET
-
-            if (conMgr.getActiveNetworkInfo() != null
-
-                    && conMgr.getActiveNetworkInfo().isAvailable()
-
-                    && conMgr.getActiveNetworkInfo().isConnected()) {
-
-                    return true;
-
-                    } else {
-                            return false;
-                            }
-
+          NetworkInfo.State mobile = conMgr.getNetworkInfo(0).getState();
+          NetworkInfo.State wifi = conMgr.getNetworkInfo(1).getState();
+          if ((mobile == NetworkInfo.State.CONNECTED) || (wifi == NetworkInfo.State.CONNECTED))
+           return true;
+                else return false;
        }
+
+
+        private boolean checkGPS()
+        {
+            LocationManager lm;
+            lm = (LocationManager) getSystemService(LOCATION_SERVICE);
+            boolean gps_on = lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
+            return gps_on;
+        }
+
+
      
       private void centerMapView() {
                 mapController.zoomToSpan(itemizedOverlay.getLatSpanE6(), itemizedOverlay.getLonSpanE6());      
