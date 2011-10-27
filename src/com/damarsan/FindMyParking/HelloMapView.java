@@ -63,7 +63,6 @@ public class HelloMapView extends MapActivity implements LocationListener
         private ProgressDialog dialog;
         StringBuilder response = new StringBuilder();
         String unidad=null;
-
 	/** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -335,7 +334,7 @@ public class HelloMapView extends MapActivity implements LocationListener
                      {                 
                  Double res = this.getDistanceInKiloMeters(geopoint_p, geopoint_u);
 
-                      this.ViewDialog("Distancia aprox. de "+res.toString()+unidad);      
+                      this.ViewDialog("Distancia aprox. de "+res.toString()+unidad);
                      }
                      else 
                        Toast.makeText(getApplicationContext(),"Falta ubicar origen y/o destino", Toast.LENGTH_SHORT).show();
@@ -397,7 +396,6 @@ public class HelloMapView extends MapActivity implements LocationListener
        unidad =" Kms";
         return Math.round(distance/1000);
     }
-
     else {
         unidad=" Mts.";
         return Math.round(distance);
