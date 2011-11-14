@@ -1,24 +1,19 @@
 package com.damarsan.FindMyParking;
 
-import java.util.ArrayList;
-
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.Point;
 import android.graphics.drawable.Drawable;
-
 import android.location.Address;
 import android.location.Geocoder;
-import android.util.Log;
-import android.view.MotionEvent;
 import android.widget.Toast;
 import com.google.android.maps.GeoPoint;
 import com.google.android.maps.ItemizedOverlay;
 import com.google.android.maps.MapView;
 import com.google.android.maps.OverlayItem;
+
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -105,39 +100,25 @@ public class HelloItemizedOverlay extends ItemizedOverlay {
              
  return true;
  }
+
+
       
-   /* @Override
+   @Override
     public void draw(Canvas canvas, MapView mapView, boolean shadow) {
 
+      /*
+       Paint lp4;
+       lp4 = new Paint();
+       lp4.setColor(Color.RED);
+       lp4.setAntiAlias(true);
+       lp4.setStyle(Paint.Style.STROKE);
+       canvas.drawCircle(mapView.getWidth()/2, mapView.getHeight()/2, 20, lp4);
+      // drawable = this.getResources().getDrawable(R.drawable.androidmarker);
 
-        Point screenCoords=new Point();
-        Point screenCoords1=new Point();
-        
-        if (p1!=null && p2!= null) {
-            
-        p1 = this.getItem(0).getPoint();
-        p2 = this.getItem(1).getPoint();
-       
-        Log.v(TAG, p1.toString());
-        Log.v(TAG, p2.toString());
-        
-        mapView.getProjection().toPixels(p1, screenCoords);
-        int x1=screenCoords.x;
-        int y1=screenCoords.y;
+       mapView.invalidate();
 
-        mapView.getProjection().toPixels(p2, screenCoords1);
-        int x2=screenCoords1.x;
-        int y2=screenCoords1.y;
-
-        paint.setStrokeWidth(2); 
-        paint.setStyle(Paint.Style.STROKE);
-        paint.setAntiAlias(true); 
-        paint.setColor(Color.GREEN);
-        canvas.drawLine(x1, y1, x2, y2, paint);
-        super.draw(canvas, mapView, shadow);
-
-        }
-    }*/
+         */
+    }
     
     
 
