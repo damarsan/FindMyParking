@@ -6,7 +6,6 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
 import android.location.Criteria;
@@ -19,29 +18,19 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.util.Log;
-import android.view.Gravity;
-import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.view.View;
-import android.view.ViewGroup;
-import android.webkit.WebView;
-import android.webkit.WebViewClient;
+import android.view.*;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
-import com.google.android.maps.GeoPoint;
-import com.google.android.maps.MapActivity;
-import com.google.android.maps.MapController;
-import com.google.android.maps.MapView;
-import com.google.android.maps.Overlay;
-import com.google.android.maps.OverlayItem;
+import com.google.android.maps.*;
 
 import java.io.*;
 import java.net.MalformedURLException;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import static android.provider.Settings.ACTION_DATA_ROAMING_SETTINGS;
 
 public class HelloMapView extends MapActivity implements LocationListener
 {
@@ -72,25 +61,25 @@ public class HelloMapView extends MapActivity implements LocationListener
 
        if(!this.checkInternetConnection())
        {
-      /*  AlertDialog alertDialog = new AlertDialog.Builder(this).create();
+        AlertDialog alertDialog = new AlertDialog.Builder(this).create();
         alertDialog.setTitle("AVISO");
         alertDialog.setMessage("Se requiere conexión a Internet");
         alertDialog.setButton("OK", new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int which) {
                 try {
-                     startActivity(new Intent(Settings.ACTION_DATA_ROAMING_SETTINGS));
+                     startActivity(new Intent(ACTION_DATA_ROAMING_SETTINGS));
                 } catch(Throwable t){}; 
             }
                 });
             alertDialog.setIcon(R.drawable.icon);
             alertDialog.show();
-            */
 
-        //   createDialog("AVISO","Se requiere conexión a Internet","l");
+
+           createDialog("AVISO","Se requiere conexión a Internet",true);
        }
 
         if(!checkGPS()) {
-        //    createDialog("AVISO","Es recomendable activar el GPS para mejorar precisión","g");
+            createDialog("AVISO","Es recomendable activar el GPS para mejorar precisión",false);
         }
         
         if (!checkFirstTime()) Log.v(TAG,"OK, ya se había almacenado el parking"); else  Log.v(TAG,"NO ESTA almacenado el parking");
@@ -113,8 +102,8 @@ public class HelloMapView extends MapActivity implements LocationListener
           //nivel de energia
           criteria.setPowerRequirement(Criteria.POWER_MEDIUM);
           //Alta precisión horizontal y vertical
-          criteria.setHorizontalAccuracy(Criteria.ACCURACY_HIGH);
-          criteria.setVerticalAccuracy(Criteria.ACCURACY_HIGH);
+         // criteria.setHorizontalAccuracy(Criteria.ACCURACY_HIGH);
+        //  criteria.setVerticalAccuracy(Criteria.ACCURACY_HIGH);
           //Mostramos dialogo de carga
           this.runDialog(3);
           //En primer lugar se instancia el LocationManager
@@ -181,7 +170,7 @@ public class HelloMapView extends MapActivity implements LocationListener
                itemizedOverlay.addOverlay(overlayitem);
                 mapOverlays.add(itemizedOverlay);
                 } else {
-                    Toast.makeText(getApplicationContext(), "MAPA CARGADO", Toast.LENGTH_SHORT).show();
+            //        Toast.makeText(getApplicationContext(), "MAPA CARGADO", Toast.LENGTH_SHORT).show();
                 } 	
                              
     }  // FIN DE ONCREATE()
@@ -267,7 +256,13 @@ public class HelloMapView extends MapActivity implements LocationListener
                  drawable = this.getResources().getDrawable(R.drawable.androidmarker);
                  drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
                 //Obtenemos la ubicación actual
-                 locationManager.requestSingleUpdate(criteria, locationListener, null);
+              //   locationManager.requestSingleUpdate(criteria, locationListener, null);
+                //Establecemos que las actualizaciones se realizen si hay 5 metros de distancia desde la última
+                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,0,5,locationListener);
+                // Register the listener with the Location Manager to receive location updates
+                locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,0,5,locationListener);
+
+
                //  callFoursquare();
                  return(true);
                 
@@ -401,7 +396,6 @@ public class HelloMapView extends MapActivity implements LocationListener
         return Math.round(distance);
         }
     }
-    
                         public void ViewDialog(String aux) {
                                         LayoutInflater inflater = getLayoutInflater();
                                         View layout = inflater.inflate(R.layout.toast_layout,
@@ -416,9 +410,7 @@ public class HelloMapView extends MapActivity implements LocationListener
                                         toast.setView(layout);
                                         toast.show();
                                         }
-                        
-                     
-        private void createDialog(String title, final String comment, final char type)
+        private void createDialog(String title, final String comment, final boolean type)
         {
         AlertDialog alertDialog = new AlertDialog.Builder(this).create();
         alertDialog.setTitle(title);
@@ -426,11 +418,11 @@ public class HelloMapView extends MapActivity implements LocationListener
         alertDialog.setButton("OK", new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int which) {
                 try {
-                 //   if (!(type != "l")) {
-                            startActivity(new Intent(Settings.ACTION_DATA_ROAMING_SETTINGS));
-                 //       } else {
-                //    startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS));
-               // }
+                    if (type) {
+                            startActivity(new Intent(ACTION_DATA_ROAMING_SETTINGS));
+                        } else {
+                   startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS));
+                }
 
                 } catch(Throwable t){};
             }
