@@ -1,6 +1,7 @@
 package com.damarsan.FindMyParking;
 
 //import android.R;
+
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
@@ -23,6 +24,9 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 import com.google.android.maps.*;
+import com.parse.Parse;
+import com.parse.ParseFile;
+import com.parse.ParseObject;
 
 import java.io.*;
 import java.net.MalformedURLException;
@@ -52,13 +56,16 @@ public class HelloMapView extends MapActivity implements LocationListener
         private ProgressDialog dialog;
         StringBuilder response = new StringBuilder();
         String unidad=null;
+        ParseObject jobApplication;
 	/** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState) {
-    	
+        Parse.initialize(this, "W7XEpBuIenlRk3BiKufaC34a0nE6oMDr7bA4EzoT", "UVfq6Q0HDEGZfJvGoNOWnAP2p5Hu8mAOW3miSpyF");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
-
+        ParseObject testObject = new ParseObject("TestObject");
+        testObject.put("foo", "bar");
+        testObject.saveInBackground();
        if(!this.checkInternetConnection())
        {
         AlertDialog alertDialog = new AlertDialog.Builder(this).create();
@@ -111,6 +118,8 @@ public class HelloMapView extends MapActivity implements LocationListener
           
            //Obtenemos el mejor proveedor con los criterios descritos anteriormente
            provider = locationManager.getBestProvider(criteria, true);
+
+            Log.v(TAG, "------------PROVIDER---------------: ");
            //
            location = locationManager.getLastKnownLocation(provider);
                 //Activamos la OverlayLayer y añadimos el recurso de imagen androidmarker
@@ -125,13 +134,13 @@ public class HelloMapView extends MapActivity implements LocationListener
 			}
 			@Override
 			public void onProviderEnabled(String provider) {
-                                Log.v(TAG, "....OnProviderEnabled----");
+                                Log.v(TAG, "----PROVIDER ACTIVADO----");
                                 
 
 			}
 			@Override
 			public void onProviderDisabled(String provider) {
-				 Log.v(TAG, "....OnProviderDisabled----");
+				 Log.v(TAG, "----PROVIDER DESACTIVADO----");
 			}
 			@Override
 			public void onLocationChanged(Location location) {
@@ -226,26 +235,45 @@ public class HelloMapView extends MapActivity implements LocationListener
             case 1://Almacenar Parking
                 //Almacenamos la ubicación donde hemos aparcado
                 drawable = this.getResources().getDrawable(R.drawable.androidmarker);
+
+                location = locationManager.getLastKnownLocation(provider);
+
+                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0,
+                        0, locationListener);
+                locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,0,5,locationListener);
+
+                this.runDialog(3);
+
                 //Calculamos el Geopoint
+                try {
                 double lon = (double) (location.getLongitude() * 1E6);
 				double lati = (double) (location.getLatitude() * 1E6);
 				int lontitue = (int)lon;
 				int latitute = (int)lati;
                                
 			        geopoint_p = new GeoPoint(latitute, lontitue);
-                                
+                } catch (Exception e) {
+                    Log.v(TAG, "LOCATION ES NULL");
+                }
                 //lo almacenamos                
                 try {  
-                FileOutputStream out = openFileOutput("location.txt",Context.MODE_PRIVATE);
-                OutputStreamWriter osw = new OutputStreamWriter(out);
-                osw.write(Double.toString(geopoint_p.getLongitudeE6() / 1E6));
-                osw.write("\n");
-                osw.write(Double.toString(geopoint_p.getLatitudeE6() / 1E6));
-                osw.flush();
-                osw.close();
+              //  FileOutputStream out = openFileOutput("location.txt",Context.MODE_PRIVATE);
+              //  OutputStreamWriter osw = new OutputStreamWriter(out);
+             //   osw.write(Double.toString(geopoint_p.getLongitudeE6() / 1E6));
+             //   osw.write("\n");
+             //   osw.write(Double.toString(geopoint_p.getLatitudeE6() / 1E6));
+             //   osw.flush();
+            //    osw.close();
+                byte[] data = (Double.toString(geopoint_p.getLongitudeE6() / 1E6)+"\n"+Double.toString(geopoint_p.getLatitudeE6() / 1E6)).getBytes();
+                    ParseFile file = new ParseFile("location.txt",data);
+                    file.saveInBackground();
+                    jobApplication = new ParseObject("SaveLocation");
+                    jobApplication.put("LocationFile", file);
+                    jobApplication.saveInBackground();
                	Toast.makeText(getApplicationContext(), "Ubicación de Parking Almacenada", Toast.LENGTH_SHORT).show();
                 }
-                catch (IOException t) {
+                catch (Exception t) {
+                    Log.v(TAG, "LOCATION ES NULL");
                 }
            
                 return(true);
@@ -279,6 +307,9 @@ public class HelloMapView extends MapActivity implements LocationListener
                 while ((str = reader.readLine()) != null) {
                     buf.append(str+"\n");
                 }
+
+                   ParseFile applicantResume = (ParseFile)jobApplication.get("SaveLocation");
+                   byte[] applicantResumeData = applicantResume.getData();
 
                 //separamos la longitud y latitud
                 separated = buf.toString().split("\n");
@@ -412,21 +443,28 @@ public class HelloMapView extends MapActivity implements LocationListener
                                         }
         private void createDialog(String title, final String comment, final boolean type)
         {
-        AlertDialog alertDialog = new AlertDialog.Builder(this).create();
+        AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
         alertDialog.setTitle(title);
         alertDialog.setMessage(comment);
-        alertDialog.setButton("OK", new DialogInterface.OnClickListener() {
+        alertDialog.setPositiveButton("YES", new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int which) {
                 try {
                     if (type) {
-                            startActivity(new Intent(ACTION_DATA_ROAMING_SETTINGS));
-                        } else {
-                   startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS));
-                }
+                        startActivity(new Intent(ACTION_DATA_ROAMING_SETTINGS));
+                    } else {
+                        startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS));
+                    }
 
-                } catch(Throwable t){};
+                } catch (Throwable t) {
+                }
+                ;
             }
-                });
+        });
+            alertDialog.setNegativeButton("NO", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int which) {
+                    dialog.cancel();
+                }
+            });
             alertDialog.setIcon(R.drawable.icon);
             alertDialog.show();
        }
